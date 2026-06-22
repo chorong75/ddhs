@@ -531,7 +531,7 @@ body {
 }
 .result-info-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 14px;
 }
 .result-info-item { }
@@ -1031,29 +1031,29 @@ body {
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">입학년도</label>
-            <select id="admissionYear" class="form-select">
+            <select id="admissionYear" class="form-select" onchange="handleStudentInfoChange()">
               <option value="2026">2026년 입학</option>
               <option value="2025">2025년 입학</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">학년</label>
-            <select id="grade" class="form-select">
+            <select id="grade" class="form-select" onchange="handleStudentInfoChange()">
               <option value="1">1학년</option>
               <option value="2">2학년</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">반</label>
-            <input type="number" autocomplete="off" id="classNum" class="form-input" placeholder="예) 3" min="1" max="10" />
+            <input type="number" id="classNum" class="form-input" placeholder="예) 3" min="1" max="10" />
           </div>
           <div class="form-group">
             <label class="form-label">번호</label>
-            <input type="number" autocomplete="off" id="studentNum" class="form-input" placeholder="예) 12" min="1" max="23" />
+            <input type="number" id="studentNum" class="form-input" placeholder="예) 12" min="1" max="23" />
           </div>
           <div class="form-group" style="flex:2">
             <label class="form-label">이름</label>
-            <input type="text" autocomplete="off" id="studentName" class="form-input" placeholder="학생 이름" />
+            <input type="text" id="studentName" class="form-input" placeholder="학생 이름" />
           </div>
         </div>
       </div>
@@ -1072,7 +1072,7 @@ body {
 
       <div class="card">
         <div class="search-box-wrap">
-          <input type="text" autocomplete="off" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 생명, 의학, 물리)" oninput="searchMajors()" />
+          <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 생명, 의학, 물리)" oninput="searchMajors()" />
           <span class="search-icon">🔎</span>
         </div>
         <div id="majorSearchResults" class="search-results hidden"></div>
@@ -1121,7 +1121,7 @@ body {
           <span class="memo-title">🗒 교사 상담 메모</span>
           <span class="memo-hint">학생 희망 진로, 선택 이유, 추가 사항 등을 자유롭게 기록하세요.</span>
         </div>
-        <textarea autocomplete="off" id="counselingMemo" class="memo-textarea" placeholder="상담 내용을 입력하세요...&#10;&#10;예) 학생이 컴퓨터공학에 관심이 많아 수학 관련 과목을 중점 선택함. AI 분야 진출 희망." rows="6"></textarea>
+        <textarea id="counselingMemo" class="memo-textarea" placeholder="상담 내용을 입력하세요...&#10;&#10;예) 학생이 컴퓨터공학에 관심이 많아 수학 관련 과목을 중점 선택함. AI 분야 진출 희망." rows="6"></textarea>
       </div>
       <div class="step-footer">
         <button class="btn-secondary" onclick="goStep(2)">← 이전</button>
@@ -1198,8 +1198,10 @@ const schoolCourses = [
           { name: "통합과학2", credits: 4 },
           { name: "과학탐구실험2", credits: 1 },
           { name: "체육2", credits: 2 },
-          { name: "음악 또는 미술", credits: 3, note: "학기교차" },
-          { name: "정보 또는 한문", credits: 3, note: "학기교차" },
+          { name: "음악", credits: 3, note: "학기교차" },
+          { name: "미술", credits: 3, note: "학기교차" },
+          { name: "정보", credits: 3, note: "학기교차" },
+          { name: "한문", credits: 3, note: "학기교차" },
         ]
       }
     ]
@@ -1414,7 +1416,8 @@ const schoolCourses = [
           { name: "과학탐구실험1", credits: 1 },
           { name: "체육1", credits: 2 },
           { name: "정보", credits: 3 },
-          { name: "음악 또는 미술", credits: 3, note: "학기교차" },
+          { name: "음악", credits: 3, note: "학기교차" },
+          { name: "미술", credits: 3, note: "학기교차" },
         ]
       }
     ]
@@ -1436,7 +1439,8 @@ const schoolCourses = [
           { name: "과학탐구실험2", credits: 1 },
           { name: "체육2", credits: 2 },
           { name: "인공지능 기초", credits: 3 },
-          { name: "음악 또는 미술", credits: 3, note: "학기교차" },
+          { name: "음악", credits: 3, note: "학기교차" },
+          { name: "미술", credits: 3, note: "학기교차" },
         ]
       }
     ]
@@ -1819,17 +1823,8 @@ const state = {
    초기화
 ──────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
-  resetCounselState();
   setupStepNav();
   showHome();
-});
-
-// 브라우저 뒤로가기/새로고침 캐시(bfcache)로 이전 입력값이 되살아나는 경우 방지
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
-    resetCounselState();
-    showHome();
-  }
 });
 
 /* ────────────────────────────────────────────
@@ -1839,52 +1834,7 @@ function showHome() {
   document.getElementById("homePage").classList.remove("hidden");
   document.getElementById("schedulePage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
-  document.getElementById("headerMode").textContent = "";
-}
-
-// 상담 데이터 완전 초기화: 이전/수정하기 이동에서는 호출하지 않음
-function resetCounselState() {
-  state.currentStep = 1;
-  state.activeSemester = null;
-  state.selectedCourses = {};
-  state.selectedMajor = null;
-
-  [
-    "studentName", "classNum", "studentNum",
-    "majorSearch", "counselingMemo", "passwordInput"
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-
-  const selectedMajorInfo = document.getElementById("selectedMajorInfo");
-  if (selectedMajorInfo) selectedMajorInfo.classList.add("hidden");
-
-  const majorSearchResults = document.getElementById("majorSearchResults");
-  if (majorSearchResults) {
-    majorSearchResults.classList.add("hidden");
-    majorSearchResults.innerHTML = "";
-  }
-
-  ["majorRecommendedCourses", "majorCounselingNote", "courseGrid", "semesterTabs", "resultContent"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = "";
-  });
-
-  const selectedMajorName = document.getElementById("selectedMajorName");
-  if (selectedMajorName) {
-    selectedMajorName.textContent = "";
-    const prevSub = selectedMajorName.nextElementSibling;
-    if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
-  }
-
-  const passwordError = document.getElementById("passwordError");
-  if (passwordError) passwordError.classList.add("hidden");
-
-  document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
-  const step1 = document.getElementById("step1");
-  if (step1) step1.classList.add("active");
-  updateStepNav(1);
+  document.getElementById("headerMode").textContent = "대덕고등학교 교육과정부";
 }
 
 // 헤더 타이틀 클릭 시 현재 페이지에 따라 다르게 동작
@@ -1905,8 +1855,7 @@ function goHomeFromSchedule() {
 
 // 상담 페이지에서 홈으로 (팝업 있음)
 function goHomeFromCounsel() {
-  if (!confirm("홈으로 돌아가면 현재 작업 내용이 모두 초기화됩니다. 계속하시겠습니까?")) return;
-  resetCounselState();
+  if (!confirm("홈으로 돌아가면 현재 작업 내용이 사라질 수 있습니다. 계속하시겠습니까?")) return;
   showHome();
 }
 
@@ -1944,7 +1893,6 @@ function checkPassword() {
   const val = document.getElementById("passwordInput").value;
   if (val === PASSWORD) {
     closePasswordModal();
-    resetCounselState();
     enterCounsel();
   } else {
     document.getElementById("passwordError").classList.remove("hidden");
@@ -2005,6 +1953,13 @@ function goStep(n) {
     alert("학생 이름을 입력해 주세요.");
     return;
   }
+
+  // STEP 4(결과 확인)로 넘어가기 전에는 모든 선택 영역의 필수 선택 개수를 확인합니다.
+  // 이전/수정하기처럼 뒤로 가는 이동은 막지 않습니다.
+  if (n === 4 && !validateRequiredCourseSelections()) {
+    return;
+  }
+
   document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
   document.getElementById(`step${n}`).classList.add("active");
   state.currentStep = n;
@@ -2015,6 +1970,58 @@ function goStep(n) {
   }
   if (n === 4) renderResult();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function getRequiredSelectionIssues() {
+  const info = getStudentInfo();
+  const issues = [];
+
+  schoolCourses
+    .filter(c => c.admissionYear === info.admissionYear && c.grade === getCounselGrade())
+    .sort((a, b) => a.semester - b.semester)
+    .forEach(data => {
+      data.sections.forEach((section, sIdx) => {
+        if (section.type === "common") return;
+        const required = Number(section.pickCount || 0);
+        if (!required) return;
+
+        const prefix = `${getCounselGrade()}-${data.semester}-${sIdx}-`;
+        const selectedCount = Object.keys(state.selectedCourses)
+          .filter(k => k.startsWith(prefix) && state.selectedCourses[k]).length;
+
+        if (selectedCount < required) {
+          issues.push({
+            semester: data.semester,
+            sectionName: section.name,
+            required,
+            selectedCount,
+          });
+        }
+      });
+    });
+
+  return issues;
+}
+
+function validateRequiredCourseSelections() {
+  const issues = getRequiredSelectionIssues();
+  if (issues.length === 0) return true;
+
+  const first = issues[0];
+  const msg = issues
+    .map(i => `${getCounselGrade()}학년 ${i.semester}학기 ${i.sectionName}: ${i.selectedCount}/${i.required} 선택`)
+    .join("\n");
+
+  alert(`아직 필수 선택 개수를 채우지 않은 영역이 있습니다.\n\n${msg}\n\n선택을 완료한 뒤 결과 확인으로 이동할 수 있습니다.`);
+
+  state.activeSemester = { grade: getCounselGrade(), semester: first.semester };
+  document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("step3").classList.add("active");
+  state.currentStep = 3;
+  updateStepNav(3);
+  renderCourseGrid();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  return false;
 }
 
 function setupStepNav() {
@@ -2038,8 +2045,18 @@ function updateStepNav(current) {
 /* ────────────────────────────────────────────
    학생 정보 헬퍼
 ──────────────────────────────────────────── */
+function handleStudentInfoChange() {
+  state.activeSemester = null;
+  state.selectedCourses = {};
+  if (state.currentStep === 3) {
+    pickDefaultSemester();
+    renderCourseGrid();
+  }
+}
 function getAdmissionYear() { return document.getElementById("admissionYear").value; }
 function getGrade()         { return parseInt(document.getElementById("grade").value); }
+// 현재 학년 기준으로 다음 학년 선택과목을 상담합니다.
+function getCounselGrade()  { return getGrade() + 1; }
 function getStudentName()   { return document.getElementById("studentName").value.trim(); }
 function getStudentInfo() {
   return {
@@ -2222,7 +2239,7 @@ function clearMajor() {
 ──────────────────────────────────────────── */
 function getAvailableSemesters() {
   const year = getAdmissionYear();
-  const grade = getGrade();
+  const grade = getCounselGrade();
   return schoolCourses
     .filter(c => c.admissionYear === year && c.grade === grade)
     .map(c => c.semester)
@@ -2238,7 +2255,7 @@ function renderSemesterTabs() {
   }
   container.innerHTML = semesters.map(sem => `
     <button class="semester-tab ${isActiveSem(sem) ? "active" : ""}" onclick="switchSemester(${sem})">
-      ${getGrade()}학년 ${sem}학기
+      ${getCounselGrade()}학년 ${sem}학기
     </button>
   `).join("");
 }
@@ -2249,11 +2266,11 @@ function isActiveSem(sem) {
 
 function pickDefaultSemester() {
   const sems = getAvailableSemesters();
-  if (sems.length > 0) state.activeSemester = { grade: getGrade(), semester: sems[0] };
+  if (sems.length > 0) state.activeSemester = { grade: getCounselGrade(), semester: sems[0] };
 }
 
 function switchSemester(sem) {
-  state.activeSemester = { grade: getGrade(), semester: sem };
+  state.activeSemester = { grade: getCounselGrade(), semester: sem };
   renderSemesterTabs();
   renderCourseGrid();
 }
@@ -2266,20 +2283,20 @@ function getCourseData() {
   const { semester } = state.activeSemester;
   return schoolCourses.find(c =>
     c.admissionYear === getAdmissionYear() &&
-    c.grade === getGrade() &&
+    c.grade === getCounselGrade() &&
     c.semester === semester
   );
 }
 
 function courseKey(sem, sIdx, courseName) {
-  return `${getGrade()}-${sem}-${sIdx}-${courseName}`;
+  return `${getCounselGrade()}-${sem}-${sIdx}-${courseName}`;
 }
 
 function isSelected(key) { return !!state.selectedCourses[key]; }
 
 function toggleCourse(key, sIdx, max) {
   const sem = state.activeSemester.semester;
-  const prefix = `${getGrade()}-${sem}-${sIdx}-`;
+  const prefix = `${getCounselGrade()}-${sem}-${sIdx}-`;
   const count = Object.keys(state.selectedCourses)
     .filter(k => k.startsWith(prefix) && state.selectedCourses[k]).length;
 
@@ -2343,7 +2360,7 @@ function renderCourseGrid() {
 
   container.innerHTML = data.sections.map((section, sIdx) => {
     const isCommon = section.type === "common";
-    const prefix = `${getGrade()}-${sem}-${sIdx}-`;
+    const prefix = `${getCounselGrade()}-${sem}-${sIdx}-`;
     const selectedCount = isCommon ? 0 :
       Object.keys(state.selectedCourses).filter(k => k.startsWith(prefix) && state.selectedCourses[k]).length;
     const full = !isCommon && selectedCount >= section.pickCount;
@@ -2399,7 +2416,7 @@ function renderResult() {
 
   semesters.forEach(sem => {
     const data = schoolCourses.find(c =>
-      c.admissionYear === info.admissionYear && c.grade === info.grade && c.semester === sem
+      c.admissionYear === info.admissionYear && c.grade === getCounselGrade() && c.semester === sem
     );
     if (!data) return;
     const chosen = [];
@@ -2407,7 +2424,7 @@ function renderResult() {
       if (section.type === "common") {
         section.courses.forEach(c => chosen.push({ name: c.name, common: true }));
       } else {
-        const prefix = `${info.grade}-${sem}-${sIdx}-`;
+        const prefix = `${getCounselGrade()}-${sem}-${sIdx}-`;
         section.courses.forEach(c => {
           if (state.selectedCourses[`${prefix}${c.name}`]) chosen.push({ name: c.name, common: false });
         });
@@ -2426,7 +2443,7 @@ function renderResult() {
     return `
       <div class="result-semester-block">
         <div class="result-semester-title">
-          📅 ${info.grade}학년 ${s.semester}학기
+          📅 ${getCounselGrade()}학년 ${s.semester}학기
           <span style="font-size:12px;font-weight:500;color:var(--c-text-mute)">선택과목 ${selectedCount}개</span>
         </div>
         <div class="result-course-list">${tags || '<span class="no-selection">선택된 과목이 없습니다.</span>'}</div>
@@ -2447,7 +2464,8 @@ function renderResult() {
       <div class="result-block-title">학생 정보</div>
       <div class="result-info-grid">
         <div class="result-info-item"><div class="result-info-label">이름</div><div class="result-info-value">${info.name || "—"}</div></div>
-        <div class="result-info-item"><div class="result-info-label">학년 / 반 / 번호</div><div class="result-info-value">${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div></div>
+        <div class="result-info-item"><div class="result-info-label">현재 학년 / 반 / 번호</div><div class="result-info-value">${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div></div>
+        <div class="result-info-item"><div class="result-info-label">상담 대상</div><div class="result-info-value">${getCounselGrade()}학년 선택과목</div></div>
         <div class="result-info-item"><div class="result-info-label">입학년도</div><div class="result-info-value">${info.admissionYear}년 입학</div></div>
       </div>
     </div>
@@ -2522,8 +2540,20 @@ const UNIV_DATA = [{"id":"가톨릭대","name":"가톨릭대","hasRec":true,"adm
 ──────────────────────────────────────────── */
 function resetAll() {
   if (!confirm("새 상담을 시작하면 현재 입력 내용이 모두 초기화됩니다. 계속하시겠습니까?")) return;
-  resetCounselState();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.getElementById("studentName").value = "";
+  document.getElementById("classNum").value = "";
+  document.getElementById("studentNum").value = "";
+  document.getElementById("majorSearch").value = "";
+  document.getElementById("selectedMajorInfo").classList.add("hidden");
+  document.getElementById("majorSearchResults").classList.add("hidden");
+  document.getElementById("counselingMemo").value = "";
+  state.currentStep = 1;
+  state.activeSemester = null;
+  state.selectedCourses = {};
+  state.selectedMajor = null;
+  const prevSub = document.getElementById("selectedMajorName").nextElementSibling;
+  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
+  goStep(1);
 }
 </script>
 </body>
