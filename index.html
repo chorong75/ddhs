@@ -927,7 +927,7 @@ body {
         <div class="home-card-icon">🗂️</div>
         <div class="home-card-title">교사 상담 도구</div>
         <div class="home-card-desc">학생 선택과목 상담 및<br>PDF 기록 저장 (교사 전용)</div>
-        <div class="home-card-btn teacher-btn">비밀번호 입력 →</div>
+        <div class="home-card-btn teacher-btn">상담하기 →</div>
       </div>
     </div>
   </div>
@@ -1067,12 +1067,12 @@ body {
       <div class="panel-header">
         <span class="panel-eyebrow">STEP 2</span>
         <h2 class="panel-title">관심학과 검색 및 권장과목 확인</h2>
-        <p class="panel-desc">학과를 검색하거나, 대학별 권장 이수과목을 참고하여 학과를 선택하세요.</p>
+        <p class="panel-desc">학과를 검색하거나, 대학별 권장 이수과목을 참고하여 학과를 선택하세요. (자료 출처: 대입정보포털 adiga)</p>
       </div>
 
       <div class="card">
         <div class="search-box-wrap">
-          <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 생명, 의학, 물리)" oninput="searchMajors()" />
+          <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 생명, 경영, 기계 등)" oninput="searchMajors()" />
           <span class="search-icon">🔎</span>
         </div>
         <div id="majorSearchResults" class="search-results hidden"></div>
@@ -2183,7 +2183,7 @@ function selectUnivDept(key) {
     category: `${found.univ} · ${found.college}`,
     recommended: recNames,       // 과목 버튼 매칭용
     recDisplay: recDisplay,      // 표시용
-    counselingNote: `${found.univ} 2028학년도 대입 기준 권장 이수과목입니다. 실제 반영 여부는 수시·정시 모집요강을 확인하세요.`,
+    counselingNote: `${found.univ} 2028학년도 대입 기준 권장 이수과목입니다. 실제 반영 여부는 모집요강을 확인하세요.`,
     univData: found,
   };
 
@@ -2465,7 +2465,7 @@ function renderResult() {
       <div class="result-info-grid">
         <div class="result-info-item"><div class="result-info-label">이름</div><div class="result-info-value">${info.name || "—"}</div></div>
         <div class="result-info-item"><div class="result-info-label">현재 학년 / 반 / 번호</div><div class="result-info-value">${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div></div>
-        <div class="result-info-item"><div class="result-info-label">상담 대상</div><div class="result-info-value">${getCounselGrade()}학년 선택과목</div></div>
+        <div class="result-info-item"><div class="result-info-label">상담 항</div><div class="result-info-value">${getCounselGrade()}학년 선택과목</div></div>
         <div class="result-info-item"><div class="result-info-label">입학년도</div><div class="result-info-value">${info.admissionYear}년 입학</div></div>
       </div>
     </div>
