@@ -39,10 +39,10 @@ function goHome() {
 
 function enterSchedule() {
   document.getElementById("homePage").classList.add("hidden");
-  document.getElementById("schedulePage").classList.remove("hidden");
   document.getElementById("counselPage").classList.add("hidden");
+  document.getElementById("schedulePage").classList.remove("hidden");
   document.getElementById("headerMode").textContent = "📚 편제표 확인";
-  renderSchedule();
+  setTimeout(() => renderSchedule(), 50);
 }
 
 function enterCounsel() {
