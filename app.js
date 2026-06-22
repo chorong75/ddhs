@@ -514,7 +514,13 @@ function openUnivModal() {
   univTempSelected.clear();
   univConfirmed.forEach((v, k) => univTempSelected.set(k, v));
   document.getElementById("univModal").classList.remove("hidden");
-  document.getElementById("univModalSearch").value = "";
+  const searchEl = document.getElementById("univModalSearch");
+  searchEl.value = "";
+  // 이벤트 중복 방지: 기존 리스너 제거 후 재등록
+  const newSearch = searchEl.cloneNode(true);
+  searchEl.parentNode.replaceChild(newSearch, searchEl);
+  newSearch.addEventListener("input", renderUnivModal);
+  newSearch.focus();
   renderUnivModal();
 }
 
