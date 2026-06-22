@@ -195,30 +195,124 @@ function getStudentInfo() {
 }
 
 /* ────────────────────────────────────────────
-   STEP 2: 관심학과 검색
+   STEP 2: 관심학과 검색 (majorRecommendations + 대학별 데이터 통합)
 ──────────────────────────────────────────── */
+
+// 대학별 권장과목 데이터를 검색 가능한 flat 배열로 변환
+function getUnivDeptList() {
+  const list = [];
+  UNIV_DATA.forEach(u => {
+    u.sections.forEach(sec => {
+      sec.depts.forEach(d => {
+        list.push({
+          _type: "univ",
+          univ: u.name,
+          college: d.college,
+          dept: d.dept,
+          계열: sec["계열"] || "",
+          cols: u.cols,
+          c1: d.c1, c2: d.c2, c3: d.c3,
+        });
+      });
+    });
+  });
+  return list;
+}
+
 function searchMajors() {
   const query = document.getElementById("majorSearch").value.trim().toLowerCase();
   const resultEl = document.getElementById("majorSearchResults");
   if (!query) { resultEl.classList.add("hidden"); return; }
 
-  const hits = majorRecommendations.filter(m =>
+  // 기존 majorRecommendations 검색
+  const localHits = majorRecommendations.filter(m =>
     m.name.toLowerCase().includes(query) ||
     m.keywords.some(k => k.toLowerCase().includes(query)) ||
     m.category.toLowerCase().includes(query)
   );
 
+  // 대학별 데이터 검색
+  const univHits = getUnivDeptList().filter(d =>
+    d.univ.toLowerCase().includes(query) ||
+    d.college.toLowerCase().includes(query) ||
+    d.dept.toLowerCase().includes(query) ||
+    d.계열.toLowerCase().includes(query) ||
+    (d.c1 || "").toLowerCase().includes(query) ||
+    (d.c2 || "").toLowerCase().includes(query) ||
+    (d.c3 || "").toLowerCase().includes(query)
+  );
+
   resultEl.classList.remove("hidden");
-  if (hits.length === 0) {
+  if (localHits.length === 0 && univHits.length === 0) {
     resultEl.innerHTML = `<div class="search-empty">검색 결과가 없습니다. 다른 키워드를 시도해 보세요.</div>`;
     return;
   }
-  resultEl.innerHTML = hits.map(m => `
-    <div class="search-result-item" onclick="selectMajor('${m.id}')">
-      <span class="result-dept">${m.name}</span>
-      <span class="result-category">${m.category}</span>
-    </div>
-  `).join("");
+
+  let html = "";
+
+  // 기존 학과 결과
+  if (localHits.length > 0) {
+    html += `<div style="font-size:11px;font-weight:600;color:#aaa;padding:8px 12px 4px;letter-spacing:.05em;">학과 정보</div>`;
+    html += localHits.map(m => `
+      <div class="search-result-item" onclick="selectMajor('${m.id}')">
+        <span class="result-dept">${m.name}</span>
+        <span class="result-category">${m.category}</span>
+      </div>
+    `).join("");
+  }
+
+  // 대학별 권장과목 결과
+  if (univHits.length > 0) {
+    html += `<div style="font-size:11px;font-weight:600;color:#aaa;padding:8px 12px 4px;letter-spacing:.05em;">대학별 권장 이수과목</div>`;
+    html += univHits.map((d, i) => {
+      const key = `univ__${d.univ}__${d.college}__${d.dept}`;
+      return `<div class="search-result-item" onclick="selectUnivDept('${key.replace(/'/g,"\\'")}')">
+        <span class="result-dept">${d.dept}</span>
+        <span class="result-category">${d.univ} · ${d.college}</span>
+      </div>`;
+    }).join("");
+  }
+
+  resultEl.innerHTML = html;
+}
+
+// 대학별 데이터에서 학과 선택
+function selectUnivDept(key) {
+  // key: "univ__연세대학교__이과대학__물리학과"
+  const parts = key.split("__");
+  const univName = parts[1], college = parts[2], dept = parts[3];
+
+  const allDepts = getUnivDeptList();
+  const found = allDepts.find(d => d.univ === univName && d.college === college && d.dept === dept);
+  if (!found) return;
+
+  // selectedMajor 형태로 변환해서 기존 UI에 표시
+  const recList = [];
+  found.cols.forEach((col, i) => {
+    const v = [found.c1, found.c2, found.c3][i];
+    if (v && v !== "미제시") recList.push(`[${col}] ${v}`);
+  });
+
+  state.selectedMajor = {
+    _type: "univ",
+    name: `${found.dept}`,
+    category: `${found.univ} · ${found.college}`,
+    recommended: recList,
+    counselingNote: `${found.univ} 2028학년도 대입 기준 권장 이수과목입니다. 실제 반영 여부는 모집요강을 확인하세요.`,
+    univData: found,
+  };
+
+  document.getElementById("majorSearch").value = `${found.dept} (${found.univ})`;
+  document.getElementById("majorSearchResults").classList.add("hidden");
+  document.getElementById("selectedMajorName").textContent = `${found.dept}`;
+  document.getElementById("selectedMajorName").insertAdjacentHTML("afterend",
+    `<div style="font-size:12px;color:var(--c-text-mute);margin-top:2px;">${found.univ} · ${found.college}</div>`
+  );
+  document.getElementById("majorRecommendedCourses").innerHTML =
+    recList.map(c => `<span class="course-tag">📌 ${c}</span>`).join("");
+  document.getElementById("majorCounselingNote").textContent = state.selectedMajor.counselingNote;
+  document.getElementById("selectedMajorInfo").classList.remove("hidden");
+  if (state.currentStep === 3) renderCourseGrid();
 }
 
 function selectMajor(id) {
@@ -227,6 +321,11 @@ function selectMajor(id) {
   state.selectedMajor = major;
   document.getElementById("majorSearch").value = major.name;
   document.getElementById("majorSearchResults").classList.add("hidden");
+
+  // 이전에 univ 타입 선택 시 추가된 서브타이틀 제거
+  const prevSub = document.getElementById("selectedMajorName").nextElementSibling;
+  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
+
   document.getElementById("selectedMajorName").textContent = major.name;
   document.getElementById("majorRecommendedCourses").innerHTML =
     major.recommended.map(c => `<span class="course-tag">📌 ${c}</span>`).join("");
@@ -239,6 +338,9 @@ function clearMajor() {
   state.selectedMajor = null;
   document.getElementById("majorSearch").value = "";
   document.getElementById("selectedMajorInfo").classList.add("hidden");
+  // univ 타입 서브타이틀 제거
+  const prevSub = document.getElementById("selectedMajorName").nextElementSibling;
+  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
   if (state.currentStep === 3) renderCourseGrid();
 }
 
@@ -505,79 +607,9 @@ function downloadPDF() {
    대학 권장 이수과목 모달
 ──────────────────────────────────────────── */
 
-// 모달에서 임시로 체크된 항목 (key → {univ, college, dept, cols, c1, c2, c3})
-const univTempSelected = new Map();
-// 최종 확정된 항목
-const univConfirmed = new Map();
-
-function openUnivModal() {
-  univTempSelected.clear();
-  univConfirmed.forEach((v, k) => univTempSelected.set(k, v));
-  document.getElementById("univModal").classList.remove("hidden");
-  const searchEl = document.getElementById("univModalSearch");
-  searchEl.value = "";
-  // 이벤트 중복 방지: 기존 리스너 제거 후 재등록
-  const newSearch = searchEl.cloneNode(true);
-  searchEl.parentNode.replaceChild(newSearch, searchEl);
-  newSearch.addEventListener("input", renderUnivModal);
-  newSearch.focus();
-  renderUnivModal();
-}
-
-function closeUnivModal() {
-  document.getElementById("univModal").classList.add("hidden");
-}
-
-function closeUnivModalBg(e) {
-  if (e.target === document.getElementById("univModal")) closeUnivModal();
-}
-
-function applyUnivSelection() {
-  univConfirmed.clear();
-  univTempSelected.forEach((v, k) => univConfirmed.set(k, v));
-  renderUnivSelectedList();
-  closeUnivModal();
-}
-
-function renderUnivSelectedList() {
-  const list = document.getElementById("univSelectedList");
-  const cards = document.getElementById("univSelectedCards");
-  if (univConfirmed.size === 0) {
-    list.classList.add("hidden");
-    return;
-  }
-  list.classList.remove("hidden");
-  cards.innerHTML = [...univConfirmed.values()].map(d => {
-    const rows = [];
-    d.cols.forEach((col, i) => {
-      const v = [d.c1, d.c2, d.c3][i];
-      if (v && v !== "미제시") rows.push(`<span style="font-size:11px;background:#E6F1FB;color:#185FA5;border-radius:20px;padding:2px 8px;margin:2px 2px 2px 0;display:inline-block;">${col}: ${v}</span>`);
-    });
-    return `<div style="background:#f5f8ff;border:1px solid #d0deff;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-      <div style="font-size:13px;font-weight:600;color:var(--c-primary);margin-bottom:4px;">${d.univ} · ${d.dept}</div>
-      <div style="font-size:11px;color:var(--c-text-mute);margin-bottom:6px;">${d.college}</div>
-      <div>${rows.join("")}</div>
-    </div>`;
-  }).join("");
-}
-
-function univModalMakeKey(u, c, d) { return u + "||" + c + "||" + d; }
-
-function univModalToggle(key, checked, deptData) {
-  if (checked) univTempSelected.set(key, deptData);
-  else univTempSelected.delete(key);
-  const btn = document.getElementById("univAddBtn");
-  if (univTempSelected.size > 0) {
-    btn.classList.remove("hidden");
-    btn.textContent = `선택 완료 (${univTempSelected.size}개) →`;
-  } else {
-    btn.classList.add("hidden");
-  }
-  const row = document.querySelector(`#univModalContent tr[data-key="${CSS.escape(key)}"]`);
-  if (row) row.style.background = checked ? "var(--c-primary-light, #EEF3FF)" : "";
-  const cb = document.querySelector(`#univModalContent tr[data-key="${CSS.escape(key)}"] input`);
-  if (cb) cb.checked = checked;
-}
+/* ────────────────────────────────────────────
+   새 상담 시작
+──────────────────────────────────────────── */
 
 const UNIV_DATA = [
   {
@@ -688,89 +720,6 @@ const UNIV_DATA = [
   }
 ];
 
-function renderUnivModal() {
-  const q = (document.getElementById("univModalSearch").value || "").toLowerCase().trim();
-  let html = "";
-
-  UNIV_DATA.forEach(u => {
-    const univMatch = u.name.toLowerCase().includes(q);
-    let sectHtml = "", total = 0;
-
-    u.sections.forEach(sec => {
-      const secMatch = sec.label.toLowerCase().includes(q) || (sec["계열"] || "").toLowerCase().includes(q);
-      const rows = sec.depts.filter(d => {
-        if (!q || univMatch || secMatch) return true;
-        return [d.college, d.dept, d.c1, d.c2, d.c3 || ""].some(v => (v||"").toLowerCase().includes(q));
-      });
-      if (!rows.length) return;
-      total += rows.length;
-
-      const thCells = "<th style='width:32px'></th><th>단과대학</th><th>모집단위</th>" + u.cols.map(c => "<th>" + c + "</th>").join("");
-      let rowsHtml = rows.map(d => {
-        const key = univModalMakeKey(u.name, d.college, d.dept);
-        const chk = univTempSelected.has(key);
-        const vals = [d.c1, d.c2, d.c3].slice(0, u.cols.length);
-        const tdVals = vals.map(v => {
-          if (!v || v === "미제시") return "<td><span style='font-size:11px;color:#aaa;'>미제시</span></td>";
-          return "<td style='font-size:12px;line-height:1.6;max-width:200px;word-break:keep-all;'>" + v + "</td>";
-        }).join("");
-        return `<tr data-key="${key.replace(/"/g,'&quot;')}" style="${chk ? 'background:#EEF3FF;' : ''}">
-          <td style="padding:8px 8px 8px 12px;width:32px;"><input type="checkbox" ${chk ? "checked" : ""} style="width:15px;height:15px;accent-color:#2C5FD4;cursor:pointer;"></td>
-          <td style="padding:8px 12px;font-size:12px;color:#5A657A;white-space:nowrap;">${d.college}</td>
-          <td style="padding:8px 12px;font-size:13px;">${d.dept}</td>
-          ${tdVals}
-        </tr>`;
-      }).join("");
-
-      sectHtml += `<div style="font-size:12px;font-weight:600;color:#5A657A;margin:12px 0 5px;">${sec.label}</div>
-        <div style="border:1px solid #e5e9f0;border-radius:10px;overflow:hidden;overflow-x:auto;margin-bottom:6px;">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead><tr style="background:#f5f7fb;">${thCells}</tr></thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-        </div>`;
-    });
-
-    if (q && !univMatch && !sectHtml && !u.info.toLowerCase().includes(q)) return;
-
-    const noRecNote = !u.hasRec
-      ? `<div style="background:#f5f5f2;border-radius:8px;padding:10px 12px;font-size:12px;color:#888;margin-bottom:8px;">${u.info}</div>`
-      : "";
-
-    html += `<div style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #eee;">
-        <span style="font-size:15px;font-weight:700;color:#1A2030;">${u.name}</span>
-        <span style="font-size:11px;padding:2px 8px;border-radius:20px;${u.hasRec ? 'background:#EAF3DE;color:#3B6D11;' : 'background:#F1EFE8;color:#888;'}">${u.hasRec ? "권장과목 있음" : "권장과목 없음"}</span>
-        <span style="font-size:11px;color:#aaa;margin-left:auto;">${u.srcDate} · ${u.srcDoc}</span>
-      </div>
-      ${noRecNote}
-      ${sectHtml}
-    </div>`;
-  });
-
-  const container = document.getElementById("univModalContent");
-  container.innerHTML = html || "<div style='text-align:center;padding:2rem;color:#aaa;'>검색 결과가 없습니다.</div>";
-
-  // 체크박스 이벤트 바인딩
-  container.querySelectorAll("input[type=checkbox]").forEach(cb => {
-    cb.addEventListener("change", function() {
-      const tr = this.closest("tr");
-      const key = tr.dataset.key;
-      let deptData = null;
-      UNIV_DATA.forEach(u => {
-        u.sections.forEach(sec => {
-          sec.depts.forEach(d => {
-            if (univModalMakeKey(u.name, d.college, d.dept) === key) {
-              deptData = { ...d, univ: u.name, college: d.college, dept: d.dept, cols: u.cols };
-            }
-          });
-        });
-      });
-      univModalToggle(key, this.checked, deptData);
-    });
-  });
-}
-
 /* ────────────────────────────────────────────
    새 상담 시작
 ──────────────────────────────────────────── */
@@ -787,8 +736,7 @@ function resetAll() {
   state.activeSemester = null;
   state.selectedCourses = {};
   state.selectedMajor = null;
-  univConfirmed.clear();
-  univTempSelected.clear();
-  document.getElementById("univSelectedList").classList.add("hidden");
+  const prevSub = document.getElementById("selectedMajorName").nextElementSibling;
+  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
   goStep(1);
 }

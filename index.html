@@ -182,24 +182,9 @@
         <p class="panel-desc">학과를 검색하거나, 대학별 권장 이수과목을 참고하여 학과를 선택하세요.</p>
       </div>
 
-      <!-- 대학 권장 이수과목 참고 버튼 -->
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:var(--c-text);margin-bottom:2px;">🏫 대학별 권장 이수과목 참고</div>
-            <div style="font-size:12px;color:var(--c-text-mute);">서강대·한국외대·연세대·서울대·고려대 PDF 기반 데이터</div>
-          </div>
-          <button class="btn-primary" onclick="openUnivModal()" style="white-space:nowrap;">대학별 과목 검색 →</button>
-        </div>
-        <div id="univSelectedList" class="hidden" style="margin-top:14px;border-top:1px solid var(--c-border);padding-top:12px;">
-          <div style="font-size:12px;color:var(--c-text-mute);margin-bottom:8px;">참고 중인 대학 권장과목</div>
-          <div id="univSelectedCards"></div>
-        </div>
-      </div>
-
       <div class="card">
         <div class="search-box-wrap">
-          <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 경영, 의학)" oninput="searchMajors()" />
+          <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 생명, 의학, 물리)" oninput="searchMajors()" />
           <span class="search-icon">🔍</span>
         </div>
         <div id="majorSearchResults" class="search-results hidden"></div>
@@ -272,26 +257,6 @@
     </section>
 
   </main>
-</div>
-
-<!-- ───────── 대학 권장 이수과목 모달 ───────── -->
-<div id="univModal" class="modal-overlay hidden" onclick="closeUnivModalBg(event)">
-  <div class="modal-box" style="max-width:860px;width:95%;max-height:88vh;overflow-y:auto;padding:0;border-radius:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--c-border);position:sticky;top:0;background:#fff;z-index:10;">
-      <div>
-        <div style="font-size:16px;font-weight:700;color:var(--c-text);">🏫 대학별 권장 이수과목</div>
-        <div style="font-size:12px;color:var(--c-text-mute);margin-top:2px;">학과를 체크하면 STEP 2 참고 정보로 추가됩니다</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button id="univAddBtn" class="btn-primary hidden" onclick="applyUnivSelection()">선택 완료 →</button>
-        <button class="btn-ghost" onclick="closeUnivModal()">✕ 닫기</button>
-      </div>
-    </div>
-    <div style="padding:16px 20px;">
-      <input type="text" id="univModalSearch" class="search-input" placeholder="학교·학과·계열·과목 검색..." style="margin-bottom:14px;">
-      <div id="univModalContent"></div>
-    </div>
-  </div>
 </div>
 
 <footer class="site-footer">
