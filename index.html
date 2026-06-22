@@ -3886,6 +3886,9 @@ function renderSelectableResult({ key, type, title, subtitle, onclick }) {
           <span class="result-dept">${escapeHtml(title)}</span>
         </div>
         <div class="result-subline">${escapeHtml(subtitle)}</div>
+      </div>
+      <div class="result-select-mark">${isSelected ? "✓ 선택됨" : "선택"}</div>
+    </div>`;
 }
 
 function searchMajors() {
