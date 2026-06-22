@@ -2,14 +2,16 @@
  * app.js  –  선택과목 상담 도구 메인 로직
  */
 
+const PASSWORD = "daedeok0370";
+
 /* ────────────────────────────────────────────
    상태(State)
 ──────────────────────────────────────────── */
 const state = {
   currentStep: 1,
-  activeSemester: null,     // { grade, semester }
-  selectedCourses: {},      // key: "grade-sem-sectionIdx-courseName" → boolean
-  selectedMajor: null,      // majorRecommendations 항목
+  activeSemester: null,
+  selectedCourses: {},
+  selectedMajor: null,
 };
 
 /* ────────────────────────────────────────────
@@ -17,37 +19,127 @@ const state = {
 ──────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
   setupStepNav();
-  renderSemesterTabs();
+  showHome();
 });
 
 /* ────────────────────────────────────────────
-   스텝 이동
+   홈 / 페이지 전환
+──────────────────────────────────────────── */
+function showHome() {
+  document.getElementById("homePage").classList.remove("hidden");
+  document.getElementById("schedulePage").classList.add("hidden");
+  document.getElementById("counselPage").classList.add("hidden");
+  document.getElementById("headerMode").textContent = "";
+}
+
+function goHome() {
+  if (!confirm("홈으로 돌아가면 현재 작업 내용이 사라질 수 있습니다. 계속하시겠습니까?")) return;
+  showHome();
+}
+
+function enterSchedule() {
+  document.getElementById("homePage").classList.add("hidden");
+  document.getElementById("schedulePage").classList.remove("hidden");
+  document.getElementById("counselPage").classList.add("hidden");
+  document.getElementById("headerMode").textContent = "📚 편제표 확인";
+  renderSchedule();
+}
+
+function enterCounsel() {
+  document.getElementById("homePage").classList.add("hidden");
+  document.getElementById("schedulePage").classList.add("hidden");
+  document.getElementById("counselPage").classList.remove("hidden");
+  document.getElementById("headerMode").textContent = "🗂️ 교사 상담 도구";
+  setupStepNav();
+}
+
+/* ────────────────────────────────────────────
+   비밀번호 모달
+──────────────────────────────────────────── */
+function showPasswordModal() {
+  document.getElementById("passwordModal").classList.remove("hidden");
+  document.getElementById("passwordInput").value = "";
+  document.getElementById("passwordError").classList.add("hidden");
+  setTimeout(() => document.getElementById("passwordInput").focus(), 100);
+}
+
+function closePasswordModal() {
+  document.getElementById("passwordModal").classList.add("hidden");
+}
+
+function checkPassword() {
+  const val = document.getElementById("passwordInput").value;
+  if (val === PASSWORD) {
+    closePasswordModal();
+    enterCounsel();
+  } else {
+    document.getElementById("passwordError").classList.remove("hidden");
+    document.getElementById("passwordInput").value = "";
+    document.getElementById("passwordInput").focus();
+  }
+}
+
+/* ────────────────────────────────────────────
+   편제표 페이지 렌더링
+──────────────────────────────────────────── */
+function renderSchedule() {
+  const year = document.getElementById("scheduleYear").value;
+  const grade = parseInt(document.getElementById("scheduleGrade").value);
+  const semester = parseInt(document.getElementById("scheduleSemester").value);
+
+  const data = schoolCourses.find(c =>
+    c.admissionYear === year && c.grade === grade && c.semester === semester
+  );
+
+  const container = document.getElementById("scheduleGrid");
+
+  if (!data) {
+    container.innerHTML = `<div class="card" style="text-align:center;color:var(--c-text-mute);padding:30px;">해당 학기의 편제 데이터가 없습니다.</div>`;
+    return;
+  }
+
+  container.innerHTML = data.sections.map(section => {
+    const isCommon = section.type === "common";
+    const courseTags = section.courses.map(c => `
+      <div class="schedule-course-item">
+        <span class="schedule-course-name">${c.name}</span>
+        <span class="schedule-course-credit">${c.credits}단위</span>
+      </div>
+    `).join("");
+
+    return `
+      <div class="course-section ${isCommon ? "common-section" : ""}">
+        <div class="course-section-header">
+          <span class="section-name">
+            ${isCommon ? "📌" : "📂"} ${section.name}
+            ${!isCommon ? `<span class="section-badge">택 ${section.pickCount}</span>` : ""}
+          </span>
+          <span class="section-counter" style="color:var(--c-text-mute)">
+            ${isCommon ? "공통 이수" : `${section.courses.length}개 과목`}
+          </span>
+        </div>
+        <div class="schedule-course-list">${courseTags}</div>
+      </div>`;
+  }).join("");
+}
+
+/* ────────────────────────────────────────────
+   스텝 이동 (상담 페이지)
 ──────────────────────────────────────────── */
 function goStep(n) {
-  // Step 1 유효성 검사
   if (n > 1 && !getStudentName()) {
     alert("학생 이름을 입력해 주세요.");
     return;
   }
-
-  // 패널 전환
   document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
   document.getElementById(`step${n}`).classList.add("active");
-
-  // 탭 상태 업데이트
   state.currentStep = n;
   updateStepNav(n);
-
-  // Step 3: 학기 탭 초기화
   if (n === 3) {
     if (!state.activeSemester) pickDefaultSemester();
     renderCourseGrid();
   }
-
-  // Step 4: 결과 렌더링
   if (n === 4) renderResult();
-
-  // 상단 스크롤
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -91,7 +183,6 @@ function getStudentInfo() {
 function searchMajors() {
   const query = document.getElementById("majorSearch").value.trim().toLowerCase();
   const resultEl = document.getElementById("majorSearchResults");
-
   if (!query) { resultEl.classList.add("hidden"); return; }
 
   const hits = majorRecommendations.filter(m =>
@@ -101,12 +192,10 @@ function searchMajors() {
   );
 
   resultEl.classList.remove("hidden");
-
   if (hits.length === 0) {
     resultEl.innerHTML = `<div class="search-empty">검색 결과가 없습니다. 다른 키워드를 시도해 보세요.</div>`;
     return;
   }
-
   resultEl.innerHTML = hits.map(m => `
     <div class="search-result-item" onclick="selectMajor('${m.id}')">
       <span class="result-dept">${m.name}</span>
@@ -118,21 +207,14 @@ function searchMajors() {
 function selectMajor(id) {
   const major = majorRecommendations.find(m => m.id === id);
   if (!major) return;
-
   state.selectedMajor = major;
-
-  // 검색창 닫기
   document.getElementById("majorSearch").value = major.name;
   document.getElementById("majorSearchResults").classList.add("hidden");
-
-  // 상세 카드 표시
   document.getElementById("selectedMajorName").textContent = major.name;
   document.getElementById("majorRecommendedCourses").innerHTML =
     major.recommended.map(c => `<span class="course-tag">📌 ${c}</span>`).join("");
   document.getElementById("majorCounselingNote").textContent = major.counselingNote;
   document.getElementById("selectedMajorInfo").classList.remove("hidden");
-
-  // 편제표가 이미 렌더링되어 있다면 추천 표시 갱신
   if (state.currentStep === 3) renderCourseGrid();
 }
 
@@ -158,15 +240,12 @@ function getAvailableSemesters() {
 function renderSemesterTabs() {
   const semesters = getAvailableSemesters();
   const container = document.getElementById("semesterTabs");
-
   if (semesters.length === 0) {
     container.innerHTML = `<span style="color:var(--c-text-mute);font-size:14px;padding:8px 12px;">해당 학년·입학년도의 편제 데이터가 없습니다.</span>`;
     return;
   }
-
   container.innerHTML = semesters.map(sem => `
-    <button class="semester-tab ${isActiveSem(sem) ? "active" : ""}"
-            onclick="switchSemester(${sem})">
+    <button class="semester-tab ${isActiveSem(sem) ? "active" : ""}" onclick="switchSemester(${sem})">
       ${getGrade()}학년 ${sem}학기
     </button>
   `).join("");
@@ -178,9 +257,7 @@ function isActiveSem(sem) {
 
 function pickDefaultSemester() {
   const sems = getAvailableSemesters();
-  if (sems.length > 0) {
-    state.activeSemester = { grade: getGrade(), semester: sems[0] };
-  }
+  if (sems.length > 0) state.activeSemester = { grade: getGrade(), semester: sems[0] };
 }
 
 function switchSemester(sem) {
@@ -209,17 +286,14 @@ function courseKey(sem, sIdx, courseName) {
 function isSelected(key) { return !!state.selectedCourses[key]; }
 
 function toggleCourse(key, sIdx, max) {
-  // 해당 섹션의 현재 선택 수
   const sem = state.activeSemester.semester;
   const prefix = `${getGrade()}-${sem}-${sIdx}-`;
   const count = Object.keys(state.selectedCourses)
     .filter(k => k.startsWith(prefix) && state.selectedCourses[k]).length;
 
   if (state.selectedCourses[key]) {
-    // 해제
     state.selectedCourses[key] = false;
   } else {
-    // 선택
     if (count >= max) {
       alert(`이 영역에서 최대 ${max}개까지 선택할 수 있습니다.`);
       return;
@@ -237,23 +311,18 @@ function getRecommendedSet() {
 function renderCourseGrid() {
   const data = getCourseData();
   const container = document.getElementById("courseGrid");
-
   if (!data) {
     container.innerHTML = `<div class="card" style="text-align:center;color:var(--c-text-mute);padding:30px;">해당 학기의 편제 데이터가 없습니다.</div>`;
     return;
   }
-
   const recommended = getRecommendedSet();
   const sem = data.semester;
 
   container.innerHTML = data.sections.map((section, sIdx) => {
     const isCommon = section.type === "common";
     const prefix = `${getGrade()}-${sem}-${sIdx}-`;
-
     const selectedCount = isCommon ? 0 :
-      Object.keys(state.selectedCourses)
-        .filter(k => k.startsWith(prefix) && state.selectedCourses[k]).length;
-
+      Object.keys(state.selectedCourses).filter(k => k.startsWith(prefix) && state.selectedCourses[k]).length;
     const full = !isCommon && selectedCount >= section.pickCount;
 
     const courseBtns = section.courses.map(course => {
@@ -262,15 +331,13 @@ function renderCourseGrid() {
       const rec = recommended.has(course.name);
       if (isCommon) {
         return `<button class="course-btn" style="cursor:default;opacity:.85;" disabled>
-          ${course.name}
-          <span class="credit-badge">${course.credits}단위</span>
+          ${course.name}<span class="credit-badge">${course.credits}단위</span>
         </button>`;
       }
       return `<button
         class="course-btn ${sel ? "selected" : ""} ${rec && !sel ? "recommended" : ""}"
         onclick="toggleCourse('${key}', ${sIdx}, ${section.pickCount})"
-        title="${rec ? "⭐ 관심학과 권장과목" : ""}"
-      >
+        title="${rec ? "⭐ 관심학과 권장과목" : ""}">
         ${rec ? `<span class="star-badge">⭐</span>` : ""}
         ${course.name}
         <span class="credit-badge">${course.credits}단위</span>
@@ -285,17 +352,13 @@ function renderCourseGrid() {
             ${!isCommon ? `<span class="section-badge">택 ${section.pickCount}</span>` : ""}
           </span>
           ${!isCommon
-            ? `<span class="section-counter ${full ? "full" : ""}">
-                ${full ? "✅ 선택 완료" : `${selectedCount} / ${section.pickCount} 선택`}
-               </span>`
-            : `<span class="section-counter" style="color:var(--c-text-mute)">공통 이수</span>`
-          }
+            ? `<span class="section-counter ${full ? "full" : ""}">${full ? "✅ 선택 완료" : `${selectedCount} / ${section.pickCount} 선택`}</span>`
+            : `<span class="section-counter" style="color:var(--c-text-mute)">공통 이수</span>`}
         </div>
         <div class="course-button-group">${courseBtns}</div>
       </div>`;
   }).join("");
 
-  // 학기 탭도 재렌더
   renderSemesterTabs();
 }
 
@@ -308,18 +371,14 @@ function renderResult() {
   const recommended = getRecommendedSet();
   const memo = document.getElementById("counselingMemo").value;
 
-  // 학기별 선택 과목 집계
+  const semesters = getAvailableSemesters();
   const semesterSummaries = [];
 
-  const semesters = getAvailableSemesters();
   semesters.forEach(sem => {
     const data = schoolCourses.find(c =>
-      c.admissionYear === info.admissionYear &&
-      c.grade === info.grade &&
-      c.semester === sem
+      c.admissionYear === info.admissionYear && c.grade === info.grade && c.semester === sem
     );
     if (!data) return;
-
     const chosen = [];
     data.sections.forEach((section, sIdx) => {
       if (section.type === "common") {
@@ -327,12 +386,10 @@ function renderResult() {
       } else {
         const prefix = `${info.grade}-${sem}-${sIdx}-`;
         section.courses.forEach(c => {
-          const key = `${prefix}${c.name}`;
-          if (state.selectedCourses[key]) chosen.push({ name: c.name, common: false });
+          if (state.selectedCourses[`${prefix}${c.name}`]) chosen.push({ name: c.name, common: false });
         });
       }
     });
-
     semesterSummaries.push({ semester: sem, courses: chosen });
   });
 
@@ -353,41 +410,24 @@ function renderResult() {
       </div>`;
   }).join("");
 
-  // 권장-선택 연계 과목
   const allSelected = new Set();
   Object.entries(state.selectedCourses).forEach(([k, v]) => {
-    if (v) {
-      const parts = k.split("-");
-      allSelected.add(parts.slice(3).join("-"));
-    }
+    if (v) allSelected.add(k.split("-").slice(3).join("-"));
   });
   const linkedCourses = [...recommended].filter(r => allSelected.has(r));
-
   const linkedHTML = linkedCourses.length
     ? linkedCourses.map(c => `<span class="result-course-tag linked">⭐ ${c}</span>`).join("")
     : `<span class="no-selection">권장과목과 일치하는 선택과목이 없습니다.</span>`;
 
   document.getElementById("resultContent").innerHTML = `
-    <!-- 학생 정보 -->
     <div class="result-block">
       <div class="result-block-title">학생 정보</div>
       <div class="result-info-grid">
-        <div class="result-info-item">
-          <div class="result-info-label">이름</div>
-          <div class="result-info-value">${info.name || "—"}</div>
-        </div>
-        <div class="result-info-item">
-          <div class="result-info-label">학년 / 반 / 번호</div>
-          <div class="result-info-value">${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div>
-        </div>
-        <div class="result-info-item">
-          <div class="result-info-label">입학년도</div>
-          <div class="result-info-value">${info.admissionYear}년 입학</div>
-        </div>
+        <div class="result-info-item"><div class="result-info-label">이름</div><div class="result-info-value">${info.name || "—"}</div></div>
+        <div class="result-info-item"><div class="result-info-label">학년 / 반 / 번호</div><div class="result-info-value">${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div></div>
+        <div class="result-info-item"><div class="result-info-label">입학년도</div><div class="result-info-value">${info.admissionYear}년 입학</div></div>
       </div>
     </div>
-
-    <!-- 관심학과 & 권장과목 -->
     <div class="result-block">
       <div class="result-block-title">관심학과 및 권장과목</div>
       ${major ? `
@@ -395,32 +435,20 @@ function renderResult() {
           <span style="font-size:15px;font-weight:700;color:var(--c-primary)">${major.name}</span>
           <span style="font-size:12px;margin-left:8px;color:var(--c-text-mute)">${major.category}</span>
         </div>
-        <div class="tag-list" style="margin-bottom:12px;">
-          ${major.recommended.map(c => `<span class="course-tag">📌 ${c}</span>`).join("")}
-        </div>
+        <div class="tag-list" style="margin-bottom:12px;">${major.recommended.map(c => `<span class="course-tag">📌 ${c}</span>`).join("")}</div>
         <div class="counseling-note">${major.counselingNote}</div>
       ` : `<span class="no-selection">관심학과를 선택하지 않았습니다.</span>`}
     </div>
-
-    <!-- 선택과목 -->
     <div class="result-block">
       <div class="result-block-title">학기별 선택과목</div>
       ${semesterBlocks || `<span class="no-selection">선택된 과목이 없습니다.</span>`}
-      <div style="margin-top:10px;font-size:12px;color:var(--c-text-mute)">
-        ⭐ 표시는 관심학과 권장과목과 일치하는 과목입니다. (참고용)
-      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--c-text-mute)">⭐ 표시는 관심학과 권장과목과 일치하는 과목입니다. (참고용)</div>
     </div>
-
-    <!-- 연계 과목 -->
     <div class="result-block">
       <div class="result-block-title">권장과목 연계 현황</div>
       <div class="result-course-list">${linkedHTML}</div>
-      <div style="margin-top:10px;font-size:12px;color:var(--c-text-mute)">
-        권장과목 연계는 입시 기준이 아닌 상담 참고용입니다.
-      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--c-text-mute)">권장과목 연계는 입시 기준이 아닌 상담 참고용입니다.</div>
     </div>
-
-    <!-- 상담 메모 -->
     <div class="result-block">
       <div class="result-block-title">교사 상담 메모</div>
       <div class="result-memo">${memo || "작성된 메모가 없습니다."}</div>
@@ -435,22 +463,17 @@ function downloadPDF() {
   const info = getStudentInfo();
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")}`;
-
   const pdfSource = document.getElementById("resultContent").cloneNode(true);
-
-  // PDF 래퍼
   const wrap = document.createElement("div");
   wrap.style.cssText = "font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; padding: 30px; color: #1A2030;";
-
   const header = document.createElement("div");
   header.style.cssText = "border-bottom: 2px solid #2C5FD4; padding-bottom: 16px; margin-bottom: 24px;";
   header.innerHTML = `
-    <div style="font-size:20px;font-weight:700;color:#2C5FD4;">선택과목 상담 기록</div>
+    <div style="font-size:20px;font-weight:700;color:#2C5FD4;">선택과목 상담 기록 · 대덕고등학교</div>
     <div style="font-size:13px;color:#5A657A;margin-top:4px;">2022 개정 교육과정 기반 · 작성일: ${dateStr}</div>
   `;
   wrap.appendChild(header);
   wrap.appendChild(pdfSource);
-
   const opt = {
     margin: [10, 10],
     filename: `선택과목_상담기록_${info.name || "학생"}_${dateStr}.pdf`,
@@ -458,17 +481,14 @@ function downloadPDF() {
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
   };
-
   html2pdf().set(opt).from(wrap).save();
 }
 
 /* ────────────────────────────────────────────
-   초기화 (새 상담 시작)
+   새 상담 시작
 ──────────────────────────────────────────── */
 function resetAll() {
   if (!confirm("새 상담을 시작하면 현재 입력 내용이 모두 초기화됩니다. 계속하시겠습니까?")) return;
-
-  // 폼 초기화
   document.getElementById("studentName").value = "";
   document.getElementById("classNum").value = "";
   document.getElementById("studentNum").value = "";
@@ -476,12 +496,9 @@ function resetAll() {
   document.getElementById("selectedMajorInfo").classList.add("hidden");
   document.getElementById("majorSearchResults").classList.add("hidden");
   document.getElementById("counselingMemo").value = "";
-
-  // 상태 초기화
   state.currentStep = 1;
   state.activeSemester = null;
   state.selectedCourses = {};
   state.selectedMajor = null;
-
   goStep(1);
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>선택과목 상담 도구</title>
+<title>대덕고 선택과목 안내</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,190 +11,259 @@
 <header class="site-header">
   <div class="header-inner">
     <div class="header-brand">
-      <span class="brand-icon">🏫</span>
+      <span class="brand-icon">📋</span>
       <div>
-        <div class="brand-title">고교학점제 선택과목 상담 도구</div>
-        <div class="brand-sub">2022 개정 교육과정 기반 · 교사용</div>
+        <div class="brand-title">대덕고 선택과목 안내</div>
+        <div class="brand-sub">2022 개정 교육과정 기반</div>
       </div>
     </div>
-    <div class="header-meta">
-      <span class="school-name" id="headerSchoolName">대덕고등학교</span>
-    </div>
+    <div id="headerMode" class="header-meta"></div>
   </div>
 </header>
 
-<main class="main-wrap">
-
-  <!-- 진행 표시 -->
-  <nav class="step-nav" aria-label="진행 단계">
-    <button class="step-tab active" data-step="1">
-      <span class="step-num">1</span>
-      <span class="step-label">학생 정보</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-tab" data-step="2">
-      <span class="step-num">2</span>
-      <span class="step-label">관심학과 검색</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-tab" data-step="3">
-      <span class="step-num">3</span>
-      <span class="step-label">선택과목 상담</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-tab" data-step="4">
-      <span class="step-num">4</span>
-      <span class="step-label">결과 확인</span>
-    </button>
-  </nav>
-
-  <!-- ───────── STEP 1 ───────── -->
-  <section class="step-panel active" id="step1">
-    <div class="panel-header">
-      <span class="panel-eyebrow">STEP 1</span>
-      <h2 class="panel-title">학생 기본 정보 입력</h2>
-      <p class="panel-desc">상담을 시작하기 전에 학생 정보를 입력하세요.</p>
+<!-- ───────── 메인 홈 ───────── -->
+<div id="homePage" class="home-page">
+  <div class="home-inner">
+    <div class="home-logo">📋</div>
+    <h1 class="home-title">대덕고 선택과목 안내</h1>
+    <p class="home-desc">2022 개정 교육과정 기반 · 대덕고등학교</p>
+    <div class="home-cards">
+      <div class="home-card" onclick="enterSchedule()">
+        <div class="home-card-icon">📚</div>
+        <div class="home-card-title">편제표 확인</div>
+        <div class="home-card-desc">학년·학기별 개설 과목을<br>누구나 확인할 수 있어요</div>
+        <div class="home-card-btn">바로 보기 →</div>
+      </div>
+      <div class="home-card home-card-teacher" onclick="showPasswordModal()">
+        <div class="home-card-icon">🗂️</div>
+        <div class="home-card-title">교사 상담 도구</div>
+        <div class="home-card-desc">학생 선택과목 상담 및<br>PDF 기록 저장 (교사 전용)</div>
+        <div class="home-card-btn teacher-btn">비밀번호 입력 →</div>
+      </div>
     </div>
+  </div>
+</div>
 
+<!-- ───────── 비밀번호 모달 ───────── -->
+<div id="passwordModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-icon">🔒</div>
+    <div class="modal-title">교사 전용 메뉴</div>
+    <div class="modal-desc">비밀번호를 입력하세요</div>
+    <input type="password" id="passwordInput" class="modal-input" placeholder="비밀번호 입력"
+      onkeydown="if(event.key==='Enter') checkPassword()" />
+    <div id="passwordError" class="modal-error hidden">비밀번호가 올바르지 않습니다.</div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closePasswordModal()">취소</button>
+      <button class="btn-primary" onclick="checkPassword()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── 편제표 페이지 ───────── -->
+<div id="schedulePage" class="page hidden">
+  <main class="main-wrap">
+    <div class="page-top-bar">
+      <button class="btn-ghost" onclick="goHome()">← 홈으로</button>
+      <span class="page-mode-badge">📚 편제표 확인</span>
+    </div>
+    <div class="panel-header">
+      <h2 class="panel-title">우리학교 편제표</h2>
+      <p class="panel-desc">입학년도와 학년·학기를 선택하면 개설 과목을 확인할 수 있습니다.</p>
+    </div>
     <div class="card">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">입학년도</label>
-          <select id="admissionYear" class="form-select">
-            <option value="2025">2026년 입학</option>
-            <option value="2024">2025년 입학</option>
+          <select id="scheduleYear" class="form-select" onchange="renderSchedule()">
+            <option value="2025">2025년 입학</option>
+            <option value="2024">2024년 입학</option>
+            <option value="2023">2023년 입학</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">학년</label>
-          <select id="grade" class="form-select">
+          <select id="scheduleGrade" class="form-select" onchange="renderSchedule()">
             <option value="1">1학년</option>
             <option value="2">2학년</option>
             <option value="3">3학년</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">반</label>
-          <input type="number" id="classNum" class="form-input" placeholder="예) 3" min="1" max="10" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">번호</label>
-          <input type="number" id="studentNum" class="form-input" placeholder="예) 12" min="1" max="23" />
-        </div>
-        <div class="form-group" style="flex:2">
-          <label class="form-label">이름</label>
-          <input type="text" id="studentName" class="form-input" placeholder="학생 이름" />
+          <label class="form-label">학기</label>
+          <select id="scheduleSemester" class="form-select" onchange="renderSchedule()">
+            <option value="1">1학기</option>
+            <option value="2">2학기</option>
+          </select>
         </div>
       </div>
     </div>
+    <div id="scheduleGrid"></div>
+  </main>
+</div>
 
-    <div class="step-footer">
-      <button class="btn-primary" onclick="goStep(2)">다음 단계 →</button>
-    </div>
-  </section>
-
-  <!-- ───────── STEP 2 ───────── -->
-  <section class="step-panel" id="step2">
-    <div class="panel-header">
-      <span class="panel-eyebrow">STEP 2</span>
-      <h2 class="panel-title">관심학과 검색 및 권장과목 확인</h2>
-      <p class="panel-desc">학과를 검색하면 이수 권장과목과 상담 참고 문구를 확인할 수 있습니다.</p>
+<!-- ───────── 상담 페이지 ───────── -->
+<div id="counselPage" class="page hidden">
+  <main class="main-wrap">
+    <div class="page-top-bar">
+      <button class="btn-ghost" onclick="goHome()">← 홈으로</button>
+      <span class="page-mode-badge teacher-badge">🗂️ 교사 상담 도구</span>
     </div>
 
-    <div class="card">
-      <div class="search-box-wrap">
-        <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 경영, 의학)" oninput="searchMajors()" />
-        <span class="search-icon">🔍</span>
+    <nav class="step-nav" aria-label="진행 단계">
+      <button class="step-tab active" data-step="1">
+        <span class="step-num">1</span>
+        <span class="step-label">학생 정보</span>
+      </button>
+      <span class="step-arrow">›</span>
+      <button class="step-tab" data-step="2">
+        <span class="step-num">2</span>
+        <span class="step-label">관심학과 검색</span>
+      </button>
+      <span class="step-arrow">›</span>
+      <button class="step-tab" data-step="3">
+        <span class="step-num">3</span>
+        <span class="step-label">선택과목 상담</span>
+      </button>
+      <span class="step-arrow">›</span>
+      <button class="step-tab" data-step="4">
+        <span class="step-num">4</span>
+        <span class="step-label">결과 확인</span>
+      </button>
+    </nav>
+
+    <!-- STEP 1 -->
+    <section class="step-panel active" id="step1">
+      <div class="panel-header">
+        <span class="panel-eyebrow">STEP 1</span>
+        <h2 class="panel-title">학생 기본 정보 입력</h2>
+        <p class="panel-desc">상담을 시작하기 전에 학생 정보를 입력하세요.</p>
       </div>
-      <div id="majorSearchResults" class="search-results hidden"></div>
-    </div>
-
-    <div id="selectedMajorInfo" class="card hidden">
-      <div class="selected-major-header">
-        <div>
-          <div class="selected-major-label">선택된 관심학과</div>
-          <div class="selected-major-name" id="selectedMajorName"></div>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">입학년도</label>
+            <select id="admissionYear" class="form-select">
+              <option value="2025">2025년 입학</option>
+              <option value="2024">2024년 입학</option>
+              <option value="2023">2023년 입학</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">학년</label>
+            <select id="grade" class="form-select">
+              <option value="1">1학년</option>
+              <option value="2">2학년</option>
+              <option value="3">3학년</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">반</label>
+            <input type="number" id="classNum" class="form-input" placeholder="예) 3" min="1" max="20" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">번호</label>
+            <input type="number" id="studentNum" class="form-input" placeholder="예) 12" min="1" max="50" />
+          </div>
+          <div class="form-group" style="flex:2">
+            <label class="form-label">이름</label>
+            <input type="text" id="studentName" class="form-input" placeholder="학생 이름" />
+          </div>
         </div>
-        <button class="btn-ghost" onclick="clearMajor()">변경</button>
       </div>
-      <div class="major-detail-grid">
-        <div class="major-detail-block">
-          <div class="detail-label"> 🔖이수 권장 과목</div>
-          <div id="majorRecommendedCourses" class="tag-list"></div>
+      <div class="step-footer">
+        <button class="btn-primary" onclick="goStep(2)">다음 단계 →</button>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step-panel" id="step2">
+      <div class="panel-header">
+        <span class="panel-eyebrow">STEP 2</span>
+        <h2 class="panel-title">관심학과 검색 및 권장과목 확인</h2>
+        <p class="panel-desc">학과를 검색하면 이수 권장과목과 상담 참고 문구를 확인할 수 있습니다.</p>
+      </div>
+      <div class="card">
+        <div class="search-box-wrap">
+          <input type="text" id="majorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 컴퓨터, 경영, 의학)" oninput="searchMajors()" />
+          <span class="search-icon">🔍</span>
         </div>
-        <div class="major-detail-block">
-          <div class="detail-label">💬 상담 참고 문구</div>
-          <div id="majorCounselingNote" class="counseling-note"></div>
+        <div id="majorSearchResults" class="search-results hidden"></div>
+      </div>
+      <div id="selectedMajorInfo" class="card hidden">
+        <div class="selected-major-header">
+          <div>
+            <div class="selected-major-label">선택된 관심학과</div>
+            <div class="selected-major-name" id="selectedMajorName"></div>
+          </div>
+          <button class="btn-ghost" onclick="clearMajor()">변경</button>
+        </div>
+        <div class="major-detail-grid">
+          <div class="major-detail-block">
+            <div class="detail-label">📚 이수 권장 과목</div>
+            <div id="majorRecommendedCourses" class="tag-list"></div>
+          </div>
+          <div class="major-detail-block">
+            <div class="detail-label">💬 상담 참고 문구</div>
+            <div id="majorCounselingNote" class="counseling-note"></div>
+          </div>
+        </div>
+        <div class="major-notice">
+          ※ 권장과목은 참고용이며, 학생의 진로 방향과 흥미에 따라 유연하게 선택할 수 있습니다.
         </div>
       </div>
-      <div class="major-notice">
-        ※ 권장과목은 참고용이며, 학생의 진로 방향과 흥미에 따라 유연하게 선택할 수 있습니다.
+      <div class="step-footer">
+        <button class="btn-secondary" onclick="goStep(1)">← 이전</button>
+        <button class="btn-primary" onclick="goStep(3)">다음 단계 →</button>
       </div>
-    </div>
+    </section>
 
-    <div class="step-footer">
-      <button class="btn-secondary" onclick="goStep(1)">← 이전</button>
-      <button class="btn-primary" onclick="goStep(3)">다음 단계 →</button>
-    </div>
-  </section>
-
-  <!-- ───────── STEP 3 ───────── -->
-  <section class="step-panel" id="step3">
-    <div class="panel-header">
-      <span class="panel-eyebrow">STEP 3</span>
-      <h2 class="panel-title">선택과목 상담</h2>
-      <p class="panel-desc">학기를 선택한 후 학생이 수강할 과목을 선택하세요. ⭐ 표시는 관심학과 권장과목입니다.</p>
-    </div>
-
-    <!-- 학기 탭 -->
-    <div class="semester-tabs-wrap">
-      <div class="semester-tabs" id="semesterTabs"></div>
-    </div>
-
-    <!-- 편제표 영역 -->
-    <div id="courseGrid"></div>
-
-    <!-- 상담 메모 -->
-    <div class="card memo-card">
-      <div class="memo-header">
-        <span class="memo-title">🗒 교사 상담 메모</span>
-        <span class="memo-hint">학생 희망 진로, 선택 이유, 추가 사항 등을 자유롭게 기록하세요.</span>
+    <!-- STEP 3 -->
+    <section class="step-panel" id="step3">
+      <div class="panel-header">
+        <span class="panel-eyebrow">STEP 3</span>
+        <h2 class="panel-title">선택과목 상담</h2>
+        <p class="panel-desc">학기를 선택한 후 학생이 수강할 과목을 선택하세요. ⭐ 표시는 관심학과 권장과목입니다.</p>
       </div>
-      <textarea id="counselingMemo" class="memo-textarea" placeholder="상담 내용을 입력하세요...&#10;&#10;예) 학생이 컴퓨터공학에 관심이 많아 수학 관련 과목을 중점 선택함. AI 분야 진출 희망." rows="6"></textarea>
-    </div>
+      <div class="semester-tabs-wrap">
+        <div class="semester-tabs" id="semesterTabs"></div>
+      </div>
+      <div id="courseGrid"></div>
+      <div class="card memo-card">
+        <div class="memo-header">
+          <span class="memo-title">🗒 교사 상담 메모</span>
+          <span class="memo-hint">학생 희망 진로, 선택 이유, 추가 사항 등을 자유롭게 기록하세요.</span>
+        </div>
+        <textarea id="counselingMemo" class="memo-textarea" placeholder="상담 내용을 입력하세요...&#10;&#10;예) 학생이 컴퓨터공학에 관심이 많아 수학 관련 과목을 중점 선택함. AI 분야 진출 희망." rows="6"></textarea>
+      </div>
+      <div class="step-footer">
+        <button class="btn-secondary" onclick="goStep(2)">← 이전</button>
+        <button class="btn-primary" onclick="goStep(4)">결과 확인 →</button>
+      </div>
+    </section>
 
-    <div class="step-footer">
-      <button class="btn-secondary" onclick="goStep(2)">← 이전</button>
-      <button class="btn-primary" onclick="goStep(4)">결과 확인 →</button>
-    </div>
-  </section>
+    <!-- STEP 4 -->
+    <section class="step-panel" id="step4">
+      <div class="panel-header">
+        <span class="panel-eyebrow">STEP 4</span>
+        <h2 class="panel-title">상담 결과 확인</h2>
+        <p class="panel-desc">입력한 정보와 선택 과목을 확인하고 PDF로 저장하세요.</p>
+      </div>
+      <div id="resultContent"></div>
+      <div class="step-footer">
+        <button class="btn-secondary" onclick="goStep(3)">← 수정하기</button>
+        <button class="btn-primary" onclick="downloadPDF()">📄 PDF 다운로드</button>
+        <button class="btn-ghost" onclick="resetAll()">새 상담 시작</button>
+      </div>
+    </section>
 
-  <!-- ───────── STEP 4 ───────── -->
-  <section class="step-panel" id="step4">
-    <div class="panel-header">
-      <span class="panel-eyebrow">STEP 4</span>
-      <h2 class="panel-title">상담 결과 확인</h2>
-      <p class="panel-desc">입력한 정보와 선택 과목을 확인하고 PDF로 저장하세요.</p>
-    </div>
-
-    <div id="resultContent">
-      <!-- JS로 렌더링 -->
-    </div>
-
-    <div class="step-footer">
-      <button class="btn-secondary" onclick="goStep(3)">← 수정하기</button>
-      <button class="btn-primary" onclick="downloadPDF()">📄 PDF 다운로드</button>
-      <button class="btn-ghost" onclick="resetAll()">새 상담 시작</button>
-    </div>
-  </section>
-
-</main>
+  </main>
+</div>
 
 <footer class="site-footer">
-  <span>선택과목 상담용 · 2022 개정 교육과정 기반 · 대덕고등학교</span>
+  <span>대덕고등학교 선택과목 안내 · 2022 개정 교육과정 기반</span>
 </footer>
 
-<!-- PDF 라이브러리 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
