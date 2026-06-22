@@ -502,6 +502,270 @@ function downloadPDF() {
 }
 
 /* ────────────────────────────────────────────
+   대학 권장 이수과목 모달
+──────────────────────────────────────────── */
+
+// 모달에서 임시로 체크된 항목 (key → {univ, college, dept, cols, c1, c2, c3})
+const univTempSelected = new Map();
+// 최종 확정된 항목
+const univConfirmed = new Map();
+
+function openUnivModal() {
+  univTempSelected.clear();
+  univConfirmed.forEach((v, k) => univTempSelected.set(k, v));
+  document.getElementById("univModal").classList.remove("hidden");
+  document.getElementById("univModalSearch").value = "";
+  renderUnivModal();
+}
+
+function closeUnivModal() {
+  document.getElementById("univModal").classList.add("hidden");
+}
+
+function closeUnivModalBg(e) {
+  if (e.target === document.getElementById("univModal")) closeUnivModal();
+}
+
+function applyUnivSelection() {
+  univConfirmed.clear();
+  univTempSelected.forEach((v, k) => univConfirmed.set(k, v));
+  renderUnivSelectedList();
+  closeUnivModal();
+}
+
+function renderUnivSelectedList() {
+  const list = document.getElementById("univSelectedList");
+  const cards = document.getElementById("univSelectedCards");
+  if (univConfirmed.size === 0) {
+    list.classList.add("hidden");
+    return;
+  }
+  list.classList.remove("hidden");
+  cards.innerHTML = [...univConfirmed.values()].map(d => {
+    const rows = [];
+    d.cols.forEach((col, i) => {
+      const v = [d.c1, d.c2, d.c3][i];
+      if (v && v !== "미제시") rows.push(`<span style="font-size:11px;background:#E6F1FB;color:#185FA5;border-radius:20px;padding:2px 8px;margin:2px 2px 2px 0;display:inline-block;">${col}: ${v}</span>`);
+    });
+    return `<div style="background:#f5f8ff;border:1px solid #d0deff;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;color:var(--c-primary);margin-bottom:4px;">${d.univ} · ${d.dept}</div>
+      <div style="font-size:11px;color:var(--c-text-mute);margin-bottom:6px;">${d.college}</div>
+      <div>${rows.join("")}</div>
+    </div>`;
+  }).join("");
+}
+
+function univModalMakeKey(u, c, d) { return u + "||" + c + "||" + d; }
+
+function univModalToggle(key, checked, deptData) {
+  if (checked) univTempSelected.set(key, deptData);
+  else univTempSelected.delete(key);
+  const btn = document.getElementById("univAddBtn");
+  if (univTempSelected.size > 0) {
+    btn.classList.remove("hidden");
+    btn.textContent = `선택 완료 (${univTempSelected.size}개) →`;
+  } else {
+    btn.classList.add("hidden");
+  }
+  const row = document.querySelector(`#univModalContent tr[data-key="${CSS.escape(key)}"]`);
+  if (row) row.style.background = checked ? "var(--c-primary-light, #EEF3FF)" : "";
+  const cb = document.querySelector(`#univModalContent tr[data-key="${CSS.escape(key)}"] input`);
+  if (cb) cb.checked = checked;
+}
+
+const UNIV_DATA = [
+  {
+    id:"sogang", name:"서강대학교", hasRec:false,
+    admYear:"2028학년도 대입", srcDate:"2025년 8월 29일 기준", srcDoc:"모집단위별 반영과목 안내",
+    info:"서강대학교는 모집단위별 권장 이수과목을 지정하지 않습니다.",
+    cols:["수학 진로선택","과학 일반선택","과학 진로선택"], sections:[]
+  },
+  {
+    id:"hufs", name:"한국외국어대학교", hasRec:false,
+    admYear:"2028학년도 대입", srcDate:"시행계획안 기준", srcDoc:"대학입학전형시행계획(안)",
+    info:"2028학년도 전형시행계획서에 권장 이수과목이 별도로 명시되어 있지 않습니다.",
+    cols:["수학 진로선택","과학 일반선택","과학 진로선택"], sections:[]
+  },
+  {
+    id:"yonsei", name:"연세대학교", hasRec:true,
+    admYear:"2028학년도 대입", srcDate:"2026년 4월 기준", srcDoc:"전공연계과목 선택 가이드라인",
+    info:"2022 개정 교육과정·고교학점제 반영한 전공연계과목 선택 가이드라인을 제시합니다.",
+    cols:["수학 진로선택","과학 일반선택","과학 진로선택"],
+    sections:[
+      {label:"인문계열 — 전공연계과목 미제시", 계열:"인문", depts:[
+        {college:"문과대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"상경대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"경영대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"사회과학대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"글로벌인재대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"간호대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+      ]},
+      {label:"자연계열", 계열:"자연", depts:[
+        {college:"이과대학",dept:"수학과",c1:"기하, 미적분Ⅱ",c2:"자율선택",c3:"자율선택 3과목 이상"},
+        {college:"이과대학",dept:"물리학과",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"자율선택 3과목 이상"},
+        {college:"이과대학",dept:"화학과",c1:"기하, 미적분Ⅱ",c2:"화학",c3:"자율선택 3과목 이상"},
+        {college:"이과대학",dept:"지구시스템과학과",c1:"기하, 미적분Ⅱ",c2:"지구과학",c3:"자율선택 3과목 이상"},
+        {college:"공과대학",dept:"화공생명공학부",c1:"기하, 미적분Ⅱ",c2:"화학",c3:"자율선택 3과목 이상"},
+        {college:"공과대학",dept:"전기전자공학부",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"자율선택 3과목 이상"},
+        {college:"공과대학",dept:"기계공학부",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"자율선택 3과목 이상"},
+        {college:"공과대학",dept:"신소재공학부",c1:"기하, 미적분Ⅱ",c2:"화학",c3:"자율선택 3과목 이상"},
+        {college:"공과대학",dept:"시스템반도체공학과",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"자율선택 3과목 이상"},
+        {college:"생명시스템대학",dept:"생명과학부",c1:"기하, 미적분Ⅱ",c2:"생명과학",c3:"자율선택 3과목 이상"},
+        {college:"생명시스템대학",dept:"생명공학과",c1:"기하, 미적분Ⅱ",c2:"생명과학",c3:"자율선택 3과목 이상"},
+        {college:"인공지능융합대학",dept:"컴퓨터과학과",c1:"기하, 미적분Ⅱ",c2:"자율선택",c3:"자율선택 3과목 이상"},
+        {college:"인공지능융합대학",dept:"인공지능학과",c1:"기하, 미적분Ⅱ",c2:"자율선택",c3:"자율선택 3과목 이상"},
+      ]},
+      {label:"의·치·약학 계열", 계열:"의치약", depts:[
+        {college:"의과대학",dept:"의예과",c1:"기하, 미적분Ⅱ",c2:"생명과학",c3:"자율선택 3과목 이상"},
+        {college:"약학대학",dept:"약학과",c1:"기하, 미적분Ⅱ",c2:"생명과학 또는 화학",c3:"자율선택 3과목 이상"},
+      ]}
+    ]
+  },
+  {
+    id:"snu", name:"서울대학교", hasRec:true,
+    admYear:"2028학년도 대입", srcDate:"2028학년도 전형 기준", srcDoc:"2028학년도 대입전형 안내",
+    info:"최소한의 권장과목을 제시하며, 수시 서류평가 및 정시 교과역량평가에 반영됩니다.",
+    cols:["수학 일반/진로선택","과학 일반선택","과학 진로선택"],
+    sections:[
+      {label:"인문계열 (유형 □1)", 계열:"인문", depts:[
+        {college:"인문대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"사회과학대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+        {college:"경영대학",dept:"전 모집단위",c1:"미제시",c2:"미제시",c3:"미제시"},
+      ]},
+      {label:"자연계열 (유형 □2)", 계열:"자연", depts:[
+        {college:"자연과학대학",dept:"물리·천문학부 (물리학전공)",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"3과목 이상"},
+        {college:"자연과학대학",dept:"화학부",c1:"기하, 미적분Ⅱ",c2:"화학",c3:"3과목 이상"},
+        {college:"자연과학대학",dept:"생명과학부",c1:"기하, 미적분Ⅱ",c2:"생명과학",c3:"3과목 이상"},
+        {college:"자연과학대학",dept:"지구환경과학부",c1:"기하, 미적분Ⅱ",c2:"지구과학",c3:"3과목 이상"},
+        {college:"공과대학",dept:"기계공학부",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"3과목 이상"},
+        {college:"공과대학",dept:"전기·정보공학부",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"3과목 이상"},
+        {college:"공과대학",dept:"항공우주공학과",c1:"기하, 미적분Ⅱ",c2:"물리학",c3:"3과목 이상"},
+        {college:"공과대학",dept:"그 외 공과대학 모집단위",c1:"기하, 미적분Ⅱ",c2:"자율선택",c3:"3과목 이상"},
+        {college:"의과대학",dept:"의예과",c1:"기하, 미적분Ⅱ",c2:"생명과학",c3:"세포와 물질대사·생물의 유전 포함 3과목 이상"},
+        {college:"약학대학",dept:"약학과",c1:"기하, 미적분Ⅱ",c2:"화학 또는 생명과학",c3:"3과목 이상"},
+        {college:"간호대학",dept:"간호학과 (자연)",c1:"기하 또는 미적분Ⅱ",c2:"자율선택",c3:"3과목 이상"},
+        {college:"첨단융합학부",dept:"첨단융합학부",c1:"기하, 미적분Ⅱ",c2:"자율선택",c3:"3과목 이상"},
+      ]}
+    ]
+  },
+  {
+    id:"korea", name:"고려대학교", hasRec:true,
+    admYear:"2028학년도 대입", srcDate:"2025년 9월 2일 기준", srcDoc:"자연계열 권장이수과목 안내",
+    info:"2022 개정 교육과정(2028학년도 이후) 기준 자연계열 진로선택 과목을 학과별로 상세히 제시합니다.",
+    cols:["수학 진로선택","과학 진로선택"],
+    sections:[
+      {label:"생명과학대학", 계열:"자연", depts:[
+        {college:"생명과학대학",dept:"생명과학부",c1:"미적분Ⅱ",c2:"물질과 에너지, 화학반응의 세계, 세포와 물질대사, 생물의 유전 중 2개 이상"},
+        {college:"생명과학대학",dept:"생명공학부",c1:"미적분Ⅱ",c2:"미제시"},
+      ]},
+      {label:"이과대학", 계열:"자연", depts:[
+        {college:"이과대학",dept:"물리학과",c1:"미적분Ⅱ",c2:"역학과 에너지, 전자기와 양자"},
+        {college:"이과대학",dept:"화학과",c1:"미적분Ⅱ",c2:"물질과 에너지, 화학반응의 세계"},
+        {college:"이과대학",dept:"수학과",c1:"미적분Ⅱ, 기하",c2:"미제시"},
+      ]},
+      {label:"공과대학", 계열:"자연", depts:[
+        {college:"공과대학",dept:"기계공학부",c1:"미적분Ⅱ",c2:"역학과 에너지, 전자기와 양자"},
+        {college:"공과대학",dept:"전기전자공학부",c1:"미적분Ⅱ, 기하",c2:"역학과 에너지, 전자기와 양자, 물질과 에너지, 화학반응의 세계 중 2개 이상"},
+        {college:"공과대학",dept:"반도체공학과",c1:"미적분Ⅱ",c2:"역학과 에너지, 전자기와 양자"},
+        {college:"공과대학",dept:"화공생명공학과",c1:"미적분Ⅱ, 기하",c2:"역학과 에너지, 전자기와 양자, 물질과 에너지, 화학반응의 세계 중 2개 이상"},
+      ]},
+      {label:"의과대학 / 간호대학", 계열:"의치약", depts:[
+        {college:"의과대학",dept:"의과대학",c1:"미적분Ⅱ",c2:"물질과 에너지, 화학반응의 세계, 세포와 물질대사, 생물의 유전 중 2개 이상"},
+        {college:"간호대학",dept:"간호대학",c1:"미적분Ⅱ",c2:"물질과 에너지, 화학반응의 세계, 세포와 물질대사, 생물의 유전 중 2개 이상"},
+      ]},
+      {label:"정보대학", 계열:"자연", depts:[
+        {college:"정보대학",dept:"컴퓨터학과",c1:"미적분Ⅱ, 기하",c2:"미제시"},
+        {college:"정보대학",dept:"인공지능학과",c1:"미적분Ⅱ, 기하",c2:"미제시"},
+        {college:"정보대학",dept:"데이터과학과",c1:"미적분Ⅱ, 기하",c2:"미제시"},
+      ]}
+    ]
+  }
+];
+
+function renderUnivModal() {
+  const q = (document.getElementById("univModalSearch").value || "").toLowerCase().trim();
+  let html = "";
+
+  UNIV_DATA.forEach(u => {
+    const univMatch = u.name.toLowerCase().includes(q);
+    let sectHtml = "", total = 0;
+
+    u.sections.forEach(sec => {
+      const secMatch = sec.label.toLowerCase().includes(q) || (sec["계열"] || "").toLowerCase().includes(q);
+      const rows = sec.depts.filter(d => {
+        if (!q || univMatch || secMatch) return true;
+        return [d.college, d.dept, d.c1, d.c2, d.c3 || ""].some(v => (v||"").toLowerCase().includes(q));
+      });
+      if (!rows.length) return;
+      total += rows.length;
+
+      const thCells = "<th style='width:32px'></th><th>단과대학</th><th>모집단위</th>" + u.cols.map(c => "<th>" + c + "</th>").join("");
+      let rowsHtml = rows.map(d => {
+        const key = univModalMakeKey(u.name, d.college, d.dept);
+        const chk = univTempSelected.has(key);
+        const vals = [d.c1, d.c2, d.c3].slice(0, u.cols.length);
+        const tdVals = vals.map(v => {
+          if (!v || v === "미제시") return "<td><span style='font-size:11px;color:#aaa;'>미제시</span></td>";
+          return "<td style='font-size:12px;line-height:1.6;max-width:200px;word-break:keep-all;'>" + v + "</td>";
+        }).join("");
+        return `<tr data-key="${key.replace(/"/g,'&quot;')}" style="${chk ? 'background:#EEF3FF;' : ''}">
+          <td style="padding:8px 8px 8px 12px;width:32px;"><input type="checkbox" ${chk ? "checked" : ""} style="width:15px;height:15px;accent-color:#2C5FD4;cursor:pointer;"></td>
+          <td style="padding:8px 12px;font-size:12px;color:#5A657A;white-space:nowrap;">${d.college}</td>
+          <td style="padding:8px 12px;font-size:13px;">${d.dept}</td>
+          ${tdVals}
+        </tr>`;
+      }).join("");
+
+      sectHtml += `<div style="font-size:12px;font-weight:600;color:#5A657A;margin:12px 0 5px;">${sec.label}</div>
+        <div style="border:1px solid #e5e9f0;border-radius:10px;overflow:hidden;overflow-x:auto;margin-bottom:6px;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="background:#f5f7fb;">${thCells}</tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>`;
+    });
+
+    if (q && !univMatch && !sectHtml && !u.info.toLowerCase().includes(q)) return;
+
+    const noRecNote = !u.hasRec
+      ? `<div style="background:#f5f5f2;border-radius:8px;padding:10px 12px;font-size:12px;color:#888;margin-bottom:8px;">${u.info}</div>`
+      : "";
+
+    html += `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #eee;">
+        <span style="font-size:15px;font-weight:700;color:#1A2030;">${u.name}</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:20px;${u.hasRec ? 'background:#EAF3DE;color:#3B6D11;' : 'background:#F1EFE8;color:#888;'}">${u.hasRec ? "권장과목 있음" : "권장과목 없음"}</span>
+        <span style="font-size:11px;color:#aaa;margin-left:auto;">${u.srcDate} · ${u.srcDoc}</span>
+      </div>
+      ${noRecNote}
+      ${sectHtml}
+    </div>`;
+  });
+
+  const container = document.getElementById("univModalContent");
+  container.innerHTML = html || "<div style='text-align:center;padding:2rem;color:#aaa;'>검색 결과가 없습니다.</div>";
+
+  // 체크박스 이벤트 바인딩
+  container.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.addEventListener("change", function() {
+      const tr = this.closest("tr");
+      const key = tr.dataset.key;
+      let deptData = null;
+      UNIV_DATA.forEach(u => {
+        u.sections.forEach(sec => {
+          sec.depts.forEach(d => {
+            if (univModalMakeKey(u.name, d.college, d.dept) === key) {
+              deptData = { ...d, univ: u.name, college: d.college, dept: d.dept, cols: u.cols };
+            }
+          });
+        });
+      });
+      univModalToggle(key, this.checked, deptData);
+    });
+  });
+}
+
+/* ────────────────────────────────────────────
    새 상담 시작
 ──────────────────────────────────────────── */
 function resetAll() {
@@ -517,5 +781,8 @@ function resetAll() {
   state.activeSemester = null;
   state.selectedCourses = {};
   state.selectedMajor = null;
+  univConfirmed.clear();
+  univTempSelected.clear();
+  document.getElementById("univSelectedList").classList.add("hidden");
   goStep(1);
 }
