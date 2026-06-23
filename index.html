@@ -799,7 +799,7 @@ body {
 /* ── 인쇄/PDF 저장 전용 ─────────────────────── */
 .print-only { display: none; }
 
-@page { size: A4 portrait; margin: 8mm; }
+@page { size: A4 portrait; margin: 6mm; }
 
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -853,12 +853,12 @@ body {
     background: var(--c-primary) !important;
     color: #fff !important;
     border-radius: 7px !important;
-    padding: 8px 12px !important;
-    margin: 0 0 6px 0 !important;
+    padding: 7px 10px !important;
+    margin: 0 0 4px 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
-  .print-header-title { font-size: 14pt !important; font-weight: 800 !important; letter-spacing: -.3px !important; }
+  .print-header-title { font-size: 13.5pt !important; font-weight: 800 !important; letter-spacing: -.3px !important; }
   .print-header-sub { font-size: 8pt !important; opacity: .8 !important; margin-top: 2px !important; }
   .print-header-meta { text-align: right !important; font-size: 8.5pt !important; line-height: 1.5 !important; white-space: nowrap !important; }
 
@@ -867,8 +867,8 @@ body {
     border: 1px solid #D8DDE6 !important;
     border-radius: 7px !important;
     box-shadow: none !important;
-    padding: 7px 9px !important;
-    margin: 0 0 5px 0 !important;
+    padding: 6px 8px !important;
+    margin: 0 0 4px 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
@@ -878,8 +878,8 @@ body {
     font-weight: 800 !important;
     letter-spacing: 1px !important;
     color: var(--c-primary) !important;
-    margin-bottom: 5px !important;
-    padding-bottom: 4px !important;
+    margin-bottom: 3px !important;
+    padding-bottom: 3px !important;
     border-bottom: 1.5px solid var(--c-primary-lt) !important;
   }
 
@@ -896,23 +896,24 @@ body {
     white-space: pre-wrap !important;
     background: #F3F5F8 !important;
     border-radius: 5px !important;
-    padding: 6px 7px !important;
+    padding: 5px 6px !important;
     font-size: 8.5pt !important;
-    line-height: 1.45 !important;
+    line-height: 1.4 !important;
     color: #374151 !important;
+    min-height: auto !important;
   }
 
   .tag-list, .result-course-list {
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    gap: 3px !important;
   }
   .course-tag, .result-course-tag {
     display: inline-flex !important;
     align-items: center !important;
     border: 1px solid #D8DDE6 !important;
     border-radius: 5px !important;
-    padding: 1.5px 5px !important;
+    padding: 1px 4px !important;
     font-size: 8pt !important;
     line-height: 1.35 !important;
     color: #111827 !important;
@@ -932,7 +933,7 @@ body {
   }
 
   .result-semester-block {
-    margin-bottom: 6px !important;
+    margin-bottom: 5px !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
@@ -940,14 +941,14 @@ body {
     font-size: 9.5pt !important;
     font-weight: 800 !important;
     color: var(--c-primary) !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
   }
   .result-section-group {
     background: #FAFBFF !important;
     border: 1px solid #E2E8F4 !important;
     border-radius: 6px !important;
-    padding: 5px 6px !important;
-    margin: 4px 0 !important;
+    padding: 4px 5px !important;
+    margin: 3px 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
@@ -1416,7 +1417,7 @@ body {
       <span class="brand-icon">🏫</span>
       <div>
         <div class="brand-title"> 대덕고등학교</div>
-        <div class="brand-sub">2022 개정 교육과정 기반</div>
+        <div class="brand-sub"></div>
       </div>
     </div>
     <div id="headerMode" class="header-meta" style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;font-size:11px;color:var(--c-text-mute);font-weight:400;">
@@ -6044,20 +6045,11 @@ function renderResult() {
     <div class="print-only print-header-card">
       <div>
         <div class="print-header-title">대덕고등학교 선택과목 상담 기록</div>
-        <div class="print-header-sub">2022 개정 교육과정 기반</div>
+        <div class="print-header-sub"></div>
       </div>
       <div class="print-header-meta">
         <div>${info.name || "—"} · ${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div>
         <div>${new Date().getFullYear()}.${String(new Date().getMonth()+1).padStart(2,"0")}.${String(new Date().getDate()).padStart(2,"0")}</div>
-      </div>
-    </div>
-    <div class="result-block">
-      <div class="result-block-title">학생 정보</div>
-      <div class="result-info-grid">
-        <div class="result-info-item"><div class="result-info-label">이름</div><div class="result-info-value">${info.name || "—"}</div></div>
-        <div class="result-info-item"><div class="result-info-label">현재 학년 / 반 / 번호</div><div class="result-info-value">${info.grade}학년 ${info.classNum}반 ${info.studentNum}번</div></div>
-        <div class="result-info-item"><div class="result-info-label">상담 항목</div><div class="result-info-value">${getCounselGrade()}학년 선택과목</div></div>
-        <div class="result-info-item"><div class="result-info-label">입학년도</div><div class="result-info-value">${info.admissionYear}년 입학</div></div>
       </div>
     </div>
     <div class="result-block">
