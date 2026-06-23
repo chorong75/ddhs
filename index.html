@@ -1419,7 +1419,9 @@ body {
         <div class="brand-sub">2022 개정 교육과정 기반</div>
       </div>
     </div>
-    <div id="headerMode" class="header-meta">대덕고등학교 교육과정부</div>
+    <div id="headerMode" class="header-meta" style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;font-size:11px;color:var(--c-text-mute);font-weight:400;">
+      오늘 <span id="cntToday">–</span> &nbsp;·&nbsp; 누적 <span id="cntTotal">–</span>
+    </div>
   </div>
 </header>
 
@@ -3539,7 +3541,9 @@ function showHome() {
   document.getElementById("schedulePage").classList.add("hidden");
   document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
-  document.getElementById("headerMode").textContent = "대덕고등학교 교육과정부";
+  document.getElementById("headerMode").style = "display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;font-size:11px;color:var(--c-text-mute);font-weight:400;";
+  document.getElementById("headerMode").innerHTML = `오늘 <span id="cntToday">–</span> &nbsp;·&nbsp; 누적 <span id="cntTotal">–</span>`;
+  loadHitsCount();
 }
 
 // 헤더 타이틀 클릭 시 현재 페이지에 따라 다르게 동작
@@ -3577,6 +3581,7 @@ function enterSchedule() {
   document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
   document.getElementById("schedulePage").classList.remove("hidden");
+  document.getElementById("headerMode").style = "background:var(--c-primary-lt);border:1px solid #C5D3EC;border-radius:20px;padding:4px 12px;font-size:12px;color:var(--c-primary);font-weight:600;display:inline-flex;align-items:center;gap:0;";
   document.getElementById("headerMode").textContent = "📚 편제표 확인";
   setTimeout(() => renderSchedule(), 50);
 }
@@ -3586,6 +3591,7 @@ function enterMajorSearch() {
   document.getElementById("schedulePage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
   document.getElementById("majorSearchPage").classList.remove("hidden");
+  document.getElementById("headerMode").style = "background:var(--c-primary-lt);border:1px solid #C5D3EC;border-radius:20px;padding:4px 12px;font-size:12px;color:var(--c-primary);font-weight:600;display:inline-flex;align-items:center;gap:0;";
   document.getElementById("headerMode").textContent = "🔎 2028 대입 관심학과 검색";
 }
 
@@ -3594,6 +3600,7 @@ function enterCounsel() {
   document.getElementById("schedulePage").classList.add("hidden");
   document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.remove("hidden");
+  document.getElementById("headerMode").style = "background:var(--c-primary-lt);border:1px solid #C5D3EC;border-radius:20px;padding:4px 12px;font-size:12px;color:var(--c-primary);font-weight:600;display:inline-flex;align-items:center;gap:0;";
   document.getElementById("headerMode").textContent = "🗂️ 교사 상담 도구";
   setupStepNav();
 }
@@ -6024,6 +6031,39 @@ var UNIV_DATA = [{"id":"가톨릭대","name":"가톨릭대","hasRec":true,"admYe
 /* ────────────────────────────────────────────
    새 상담 시작
 ──────────────────────────────────────────── */
+/* ────────────────────────────────────────────
+   방문자 카운터 (hits.sh SVG 파싱)
+   ★ 아래 HITS_URL 두 곳을 실제 주소로 바꿔주세요
+──────────────────────────────────────────── */
+async function loadHitsCount() {
+  const SITE = "yourusername.github.io/yourrepo"; // ← 여기 수정
+  try {
+    // 누적: 일반 hits 엔드포인트 (카운트 증가 + 반환)
+    const [resTotal, resToday] = await Promise.all([
+      fetch(`https://hits.sh/${SITE}.svg`),
+      fetch(`https://hits.sh/${SITE}/today.svg`)
+    ]);
+    const [svgTotal, svgToday] = await Promise.all([resTotal.text(), resToday.text()]);
+
+    const parseNum = svg => {
+      const matches = svg.match(/>(\d[\d,]*)</g);
+      if (!matches) return "–";
+      // 마지막으로 등장하는 숫자값 사용
+      return matches[matches.length - 1].replace(/>|</g, "");
+    };
+
+    const elToday = document.getElementById("cntToday");
+    const elTotal = document.getElementById("cntTotal");
+    if (elToday) elToday.textContent = parseNum(svgToday);
+    if (elTotal) elTotal.textContent = parseNum(svgTotal);
+  } catch (e) {
+    // 실패해도 조용히 무시
+  }
+}
+
+// 페이지 로드 시 카운터 초기화
+document.addEventListener("DOMContentLoaded", loadHitsCount);
+
 function resetAll() {
   if (!confirm("새 상담을 시작하면 현재 입력 내용이 모두 초기화됩니다. 계속하시겠습니까?")) return;
   document.getElementById("studentName").value = "";
