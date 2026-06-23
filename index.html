@@ -1550,7 +1550,7 @@ body {
         </div>
       </div>
       <div class="major-notice">
-        ※ 권장 과목은 대학별 2028 대입 발표 자료를 기반으로 하고 있으나, 실제 반영 여부와 세부 기준은 추후 대학별 모집 요강을 확인하시기 바랍니다.
+        ※ 권장 과목은 대학별 2028 대입 발표 자료 기준으로 참고용입니다. 실제 반영 여부와 세부 기준은 추후 대학별 모집 요강을 확인하시기 바랍니다.
       </div>
     </div>
   </main>
@@ -3533,6 +3533,75 @@ document.addEventListener("DOMContentLoaded", () => {
   showHome();
 });
 
+
+/* ────────────────────────────────────────────
+   상담/검색 임시 상태 초기화
+   - 이전/수정하기(goStep 이동)는 유지
+   - 홈/다른 메뉴/상담 재진입 시에는 새 학생 상담으로 초기화
+──────────────────────────────────────────── */
+function safeSetValue(id, value = "") {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
+function safeHide(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("hidden");
+}
+
+function safeClearHtml(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = "";
+}
+
+function removeSubtitleAfter(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const prevSub = el.nextElementSibling;
+  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
+}
+
+function clearCounselData() {
+  safeSetValue("studentName");
+  safeSetValue("classNum");
+  safeSetValue("studentNum");
+  safeSetValue("majorSearch");
+  safeSetValue("counselingMemo");
+  safeSetValue("admissionYear", "2026");
+  safeSetValue("grade", "1");
+
+  safeHide("selectedMajorInfo");
+  safeHide("majorSearchResults");
+  safeClearHtml("majorSearchResults");
+  safeClearHtml("majorRecommendedCourses");
+  safeClearHtml("majorCounselingNote");
+  safeClearHtml("courseGrid");
+  safeClearHtml("semesterTabs");
+  safeClearHtml("resultContent");
+  removeSubtitleAfter("selectedMajorName");
+
+  state.currentStep = 1;
+  state.activeSemester = null;
+  state.selectedCourses = {};
+  state.selectedMajor = null;
+
+  document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+  const step1 = document.getElementById("step1");
+  if (step1) step1.classList.add("active");
+  if (typeof updateStepNav === "function") updateStepNav(1);
+}
+
+function clearPublicMajorData() {
+  if (typeof publicMajorState !== "undefined") publicMajorState.selectedMajor = null;
+  safeSetValue("publicMajorSearch");
+  safeHide("publicMajorSearchResults");
+  safeHide("publicSelectedMajorInfo");
+  safeClearHtml("publicMajorSearchResults");
+  safeClearHtml("publicMajorRecommendedCourses");
+  safeClearHtml("publicMajorCounselingNote");
+  removeSubtitleAfter("publicSelectedMajorName");
+}
+
 /* ────────────────────────────────────────────
    홈 / 페이지 전환
 ──────────────────────────────────────────── */
@@ -3543,7 +3612,7 @@ function showHome() {
   document.getElementById("counselPage").classList.add("hidden");
   document.getElementById("headerMode").style = "display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;font-size:11px;color:var(--c-text-mute);font-weight:400;";
   document.getElementById("headerMode").innerHTML = `오늘 <span id="cntToday">–</span> &nbsp;·&nbsp; 누적 <span id="cntTotal">–</span>`;
-  loadHitsCount();
+  if (window.loadVisitCounter) window.loadVisitCounter();
 }
 
 // 헤더 타이틀 클릭 시 현재 페이지에 따라 다르게 동작
@@ -3562,21 +3631,28 @@ function handleHeaderClick() {
 
 // 편제표에서 홈으로 (팝업 없음)
 function goHomeFromSchedule() {
+  clearCounselData();
+  if (typeof clearPublicMajorData === "function") clearPublicMajorData();
   showHome();
 }
 
 // 대입 관심학과 검색에서 홈으로 (팝업 없음)
 function goHomeFromMajorSearch() {
+  clearCounselData();
+  if (typeof clearPublicMajorData === "function") clearPublicMajorData();
   showHome();
 }
 
 // 상담 페이지에서 홈으로 (팝업 있음)
 function goHomeFromCounsel() {
-  if (!confirm("홈으로 돌아가면 현재 작업 내용이 사라질 수 있습니다. 계속하시겠습니까?")) return;
+  if (!confirm("홈으로 돌아가면 현재 상담 내용이 초기화됩니다. 계속하시겠습니까?")) return;
+  clearCounselData();
   showHome();
 }
 
 function enterSchedule() {
+  clearCounselData();
+  if (typeof clearPublicMajorData === "function") clearPublicMajorData();
   document.getElementById("homePage").classList.add("hidden");
   document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
@@ -3587,6 +3663,8 @@ function enterSchedule() {
 }
 
 function enterMajorSearch() {
+  clearCounselData();
+  if (typeof clearPublicMajorData === "function") clearPublicMajorData();
   document.getElementById("homePage").classList.add("hidden");
   document.getElementById("schedulePage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
@@ -3596,6 +3674,7 @@ function enterMajorSearch() {
 }
 
 function enterCounsel() {
+  clearCounselData();
   document.getElementById("homePage").classList.add("hidden");
   document.getElementById("schedulePage").classList.add("hidden");
   document.getElementById("majorSearchPage").classList.add("hidden");
@@ -5450,7 +5529,7 @@ function selectUnivDept(key) {
     category: `${found.univ} · ${found.college}`,
     recommended: recNames,       // 과목 버튼 매칭용
     recDisplay: recDisplay,      // 표시용
-    counselingNote: `${found.univ} ※ 권장 과목은 대학별 2028 대입 발표 자료를 기반으로 하고 있으나, 실제 반영 여부와 세부 기준은 추후 대학별 모집 요강을 확인하시기 바랍니다.`,
+    counselingNote: `${found.univ} ※ 권장 과목은 대학별 2028 대입 발표 자료 기준으로 참고용입니다. 실제 반영 여부와 세부 기준은 추후 대학별 모집 요강을 확인하시기 바랍니다.`,
     univData: found,
   };
 
@@ -5647,7 +5726,7 @@ function selectPublicUnivDept(key) {
     name: found.dept,
     category: `${found.univ} · ${found.college}`,
     recDisplay,
-    counselingNote: `${found.univ} ※ 권장 과목은 대학별 2028 대입 발표 자료 기반이나, 실제 반영 여부와 세부 기준은 추후 대학별 모집 요강을 확인하시기 바랍니다.`,
+    counselingNote: `${found.univ} ※ 권장 과목은 대학별 2028 대입 발표 자료 기준으로 참고용입니다. 실제 반영 여부와 세부 기준은 추후 대학별 모집 요강을 확인하시기 바랍니다.`,
   };
 
   document.getElementById("publicMajorSearch").value = `${found.dept} (${found.univ})`;
@@ -6045,19 +6124,7 @@ var UNIV_DATA = [{"id":"가톨릭대","name":"가톨릭대","hasRec":true,"admYe
 ──────────────────────────────────────────── */
 function resetAll() {
   if (!confirm("새 상담을 시작하면 현재 입력 내용이 모두 초기화됩니다. 계속하시겠습니까?")) return;
-  document.getElementById("studentName").value = "";
-  document.getElementById("classNum").value = "";
-  document.getElementById("studentNum").value = "";
-  document.getElementById("majorSearch").value = "";
-  document.getElementById("selectedMajorInfo").classList.add("hidden");
-  document.getElementById("majorSearchResults").classList.add("hidden");
-  document.getElementById("counselingMemo").value = "";
-  state.currentStep = 1;
-  state.activeSemester = null;
-  state.selectedCourses = {};
-  state.selectedMajor = null;
-  const prevSub = document.getElementById("selectedMajorName").nextElementSibling;
-  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
+  clearCounselData();
   goStep(1);
 }
 </script>
@@ -6139,6 +6206,7 @@ function resetAll() {
     }
   }
 
+  window.loadVisitCounter = loadVisitCounter;
   loadVisitCounter();
 </script>
 
