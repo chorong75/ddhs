@@ -987,7 +987,7 @@ body {
 }
 .home-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 .home-card {
@@ -1004,6 +1004,18 @@ body {
   border-color: var(--c-primary);
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(44,95,212,.12);
+}
+.home-card-major {
+  background: linear-gradient(135deg, #FAF8FF 0%, #F3EEFF 100%);
+  border-color: #E6DDF7;
+}
+.home-card-major:hover {
+  border-color: #9B8FD4;
+}
+.major-btn {
+  background: #6F5FA8;
+  color: #fff;
+  border-color: #6F5FA8;
 }
 .home-card-teacher {
   background: linear-gradient(135deg, #F0F4FF 0%, #EBF0FC 100%);
@@ -1421,13 +1433,19 @@ body {
       <div class="home-card" onclick="enterSchedule()">
         <div class="home-card-icon">📚</div>
         <div class="home-card-title">우리학교 교육과정</div>
-        <div class="home-card-desc">2025, 2026학년도 입학생 기준<br>학년·학기별 개설 과목을 누구나 확인할 수 있습니다</div>
+        <div class="home-card-desc">2025, 2026학년도 입학생 기준<br>우리학교 개설 과목을<br>확인할 수 있습니다.</div>
         <div class="home-card-btn">바로 보기 →</div>
+      </div>
+      <div class="home-card home-card-major" onclick="enterMajorSearch()">
+        <div class="home-card-icon">🔎</div>
+        <div class="home-card-title">관심 학과 검색</div>
+        <div class="home-card-desc">대학별 권장 이수 과목을<br>확인할 수 있습니다.<br>(2028 대입 기준)</div>
+        <div class="home-card-btn major-btn">확인하기 →</div>
       </div>
       <div class="home-card home-card-teacher" onclick="showPasswordModal()">
         <div class="home-card-icon">🗂️</div>
         <div class="home-card-title">교사 상담 도구</div>
-        <div class="home-card-desc">학생 선택과목 상담 및<br>PDF 기록 저장 (교사 전용)</div>
+        <div class="home-card-desc">학생 선택과목 상담 및<br>PDF 기록 저장<br>(교사 전용)</div>
         <div class="home-card-btn teacher-btn">상담하기 →</div>
       </div>
     </div>
@@ -1488,6 +1506,51 @@ body {
       </div>
     </div>
     <div id="scheduleGrid"></div>
+  </main>
+</div>
+
+<!-- ───────── 2028 대입 관심학과 검색 페이지 ───────── -->
+<div id="majorSearchPage" class="page hidden">
+  <main class="main-wrap">
+    <div class="page-top-bar">
+      <button class="btn-ghost" onclick="goHomeFromMajorSearch()">← 홈으로</button>
+      <span class="page-mode-badge">🔎 2028 대입 권장 이수과목</span>
+    </div>
+    <div class="panel-header">
+      <h2 class="panel-title">2028 대입 관심학과 검색</h2>
+      <p class="panel-desc">관심 학과 또는 대학별 모집단위를 검색하고 권장 이수과목을 확인해 보세요.</p>
+    </div>
+
+    <div class="card">
+      <div class="search-box-wrap">
+        <input type="text" id="publicMajorSearch" class="search-input" placeholder="학과명을 입력하세요 (예: 생명, 경영, 기계 등)" oninput="searchPublicMajors()" />
+        <span class="search-icon">✨</span>
+      </div>
+      <div id="publicMajorSearchResults" class="search-results hidden"></div>
+    </div>
+
+    <div id="publicSelectedMajorInfo" class="card hidden">
+      <div class="selected-major-header">
+        <div>
+          <div class="selected-major-label">선택된 관심 학과</div>
+          <div class="selected-major-name" id="publicSelectedMajorName"></div>
+        </div>
+        <button class="btn-ghost" onclick="clearPublicMajor()">변경</button>
+      </div>
+      <div class="major-detail-grid">
+        <div class="major-detail-block">
+          <div class="detail-label">📚 권장 이수과목</div>
+          <div id="publicMajorRecommendedCourses" class="tag-list"></div>
+        </div>
+        <div class="major-detail-block">
+          <div class="detail-label">💬 참고 문구</div>
+          <div id="publicMajorCounselingNote" class="counseling-note"></div>
+        </div>
+      </div>
+      <div class="major-notice">
+        ※ 권장과목은 참고용이며, 실제 반영 여부와 세부 기준은 대학별 모집요강을 확인해야 합니다.
+      </div>
+    </div>
   </main>
 </div>
 
@@ -1594,7 +1657,7 @@ body {
           <span class="memo-title">🗒 교사 상담 메모</span>
           <span class="memo-hint">학생 희망 진로, 선택 이유, 추가 사항 등을 자유롭게 기록하세요.</span>
         </div>
-        <textarea id="counselingMemo" class="memo-textarea" placeholder="상담 내용을 입력하세요...&#10;&#10;예) 학생이 미술 분야에 관심이 많아 미술 및 인문 과목 신청.. 향후 미술 관련 직업군 희망함." rows="6"></textarea>
+        <textarea id="counselingMemo" class="memo-textarea" placeholder="상담 내용을 입력하세요...&#10;&#10;예) 학생이 컴퓨터공학에 관심이 많아 수학 관련 과목을 중점 선택함. AI 분야 진출 희망." rows="6"></textarea>
       </div>
       <div class="step-footer">
         <button class="btn-secondary" onclick="goStep(1)">← 이전</button>
@@ -1617,11 +1680,11 @@ body {
           </div>
           <div class="form-group">
             <label class="form-label">반</label>
-            <input type="number" id="classNum" class="form-input" placeholder="예) 11" min="1" max="10" oninput="if(state.currentStep===3) renderResult()" />
+            <input type="number" id="classNum" class="form-input" placeholder="예) 3" min="1" max="10" oninput="if(state.currentStep===3) renderResult()" />
           </div>
           <div class="form-group">
             <label class="form-label">번호</label>
-            <input type="number" id="studentNum" class="form-input" placeholder="예) 0" min="1" max="23" oninput="if(state.currentStep===3) renderResult()" />
+            <input type="number" id="studentNum" class="form-input" placeholder="예) 12" min="1" max="23" oninput="if(state.currentStep===3) renderResult()" />
           </div>
         </div>
       </div>
@@ -3474,6 +3537,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function showHome() {
   document.getElementById("homePage").classList.remove("hidden");
   document.getElementById("schedulePage").classList.add("hidden");
+  document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
   document.getElementById("headerMode").textContent = "대덕고등학교 교육과정부";
 }
@@ -3481,9 +3545,12 @@ function showHome() {
 // 헤더 타이틀 클릭 시 현재 페이지에 따라 다르게 동작
 function handleHeaderClick() {
   const scheduleVisible = !document.getElementById("schedulePage").classList.contains("hidden");
+  const majorSearchVisible = !document.getElementById("majorSearchPage").classList.contains("hidden");
   const counselVisible  = !document.getElementById("counselPage").classList.contains("hidden");
   if (scheduleVisible) {
     goHomeFromSchedule();
+  } else if (majorSearchVisible) {
+    goHomeFromMajorSearch();
   } else if (counselVisible) {
     goHomeFromCounsel();
   }
@@ -3491,6 +3558,11 @@ function handleHeaderClick() {
 
 // 편제표에서 홈으로 (팝업 없음)
 function goHomeFromSchedule() {
+  showHome();
+}
+
+// 대입 관심학과 검색에서 홈으로 (팝업 없음)
+function goHomeFromMajorSearch() {
   showHome();
 }
 
@@ -3502,15 +3574,25 @@ function goHomeFromCounsel() {
 
 function enterSchedule() {
   document.getElementById("homePage").classList.add("hidden");
+  document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.add("hidden");
   document.getElementById("schedulePage").classList.remove("hidden");
   document.getElementById("headerMode").textContent = "📚 편제표 확인";
   setTimeout(() => renderSchedule(), 50);
 }
 
+function enterMajorSearch() {
+  document.getElementById("homePage").classList.add("hidden");
+  document.getElementById("schedulePage").classList.add("hidden");
+  document.getElementById("counselPage").classList.add("hidden");
+  document.getElementById("majorSearchPage").classList.remove("hidden");
+  document.getElementById("headerMode").textContent = "🔎 2028 대입 관심학과 검색";
+}
+
 function enterCounsel() {
   document.getElementById("homePage").classList.add("hidden");
   document.getElementById("schedulePage").classList.add("hidden");
+  document.getElementById("majorSearchPage").classList.add("hidden");
   document.getElementById("counselPage").classList.remove("hidden");
   document.getElementById("headerMode").textContent = "🗂️ 교사 상담 도구";
   setupStepNav();
@@ -5245,25 +5327,23 @@ function searchMajors() {
     return;
   }
 
-  // 계열/관련 학과 검색: 권장과목과 상담문구는 검색 대상에서 제외
+  // 학과명·계열명·관련학과 중심 검색: 키워드/권장과목/상담문구는 검색 대상에서 제외
   const localSource = (typeof majorRecommendations !== "undefined" && Array.isArray(majorRecommendations)) ? majorRecommendations : [];
   const localHits = localSource.filter(m => {
     const blob = makeSearchBlob([
       m.name,
       m.category,
-      ...(m.keywords || []),
       ...(m.relatedDepts || [])
     ]);
     return blob.includes(query);
   });
 
-  // 대학별 권장과목 검색: 대학명/단과대학/모집단위/계열만 검색, 권장과목은 제외
+  // 대학별 권장과목 검색: 모집단위/계열명/단과대학 중심 검색, 권장과목과 상담문구는 제외
   const univHits = getUnivDeptList().filter(d => {
     const blob = makeSearchBlob([
-      d.univ,
-      d.college,
       d.dept,
-      d.계열
+      d.계열,
+      d.college
     ]);
     return blob.includes(query);
   });
@@ -5415,6 +5495,186 @@ function clearMajor() {
   const prevSub = document.getElementById("selectedMajorName").nextElementSibling;
   if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
   if (state.currentStep === 2) renderCourseGrid();
+}
+
+
+/* ────────────────────────────────────────────
+   공개용: 2028 대입 관심학과 권장 이수과목 검색
+──────────────────────────────────────────── */
+const publicMajorState = { selectedMajor: null };
+
+function renderPublicSelectableResult({ key, type, title, subtitle, onclick }) {
+  const isSelected = publicMajorState.selectedMajor && publicMajorState.selectedMajor._searchKey === key;
+  return `
+    <div class="search-result-item selectable-result ${isSelected ? "selected-result" : ""}"
+         role="button"
+         tabindex="0"
+         onclick="${onclick}"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${onclick}}">
+      <div class="result-main">
+        <div class="result-title-line">
+          <span class="result-type-badge">${escapeHtml(type)}</span>
+          <span class="result-dept">${escapeHtml(title)}</span>
+        </div>
+        <div class="result-subline">${escapeHtml(subtitle)}</div>
+      </div>
+    </div>`;
+}
+
+function searchPublicMajors() {
+  const searchInput = document.getElementById("publicMajorSearch");
+  const resultEl = document.getElementById("publicMajorSearchResults");
+  if (!searchInput || !resultEl) return;
+
+  const rawQuery = searchInput.value.trim();
+  const query = rawQuery.toLowerCase().replace(/\s+/g, "");
+  if (!query) {
+    resultEl.innerHTML = "";
+    resultEl.classList.add("hidden");
+    return;
+  }
+
+  const localSource = (typeof majorRecommendations !== "undefined" && Array.isArray(majorRecommendations)) ? majorRecommendations : [];
+  const localHits = localSource.filter(m => {
+    const blob = makeSearchBlob([
+      m.name,
+      m.category,
+      ...(m.relatedDepts || [])
+    ]);
+    return blob.includes(query);
+  });
+
+  const univHits = getUnivDeptList().filter(d => {
+    const blob = makeSearchBlob([
+      d.dept,
+      d.계열,
+      d.college
+    ]);
+    return blob.includes(query);
+  });
+
+  resultEl.classList.remove("hidden");
+  if (localHits.length === 0 && univHits.length === 0) {
+    resultEl.innerHTML = `<div class="search-empty">검색 결과가 없습니다. 다른 키워드를 시도해 보세요.</div>`;
+    return;
+  }
+
+  const limitedLocal = localHits.slice(0, 10);
+  const limitedUniv = univHits.slice(0, 25);
+  let html = "";
+
+  if (limitedLocal.length > 0) {
+    html += `<div style="font-size:11px;font-weight:700;color:#8E99AE;padding:8px 4px 2px;letter-spacing:.05em;">계열/관련 학과 검색 결과</div>`;
+    html += limitedLocal.map(m => {
+      const key = `field__${m.id}`;
+      return renderPublicSelectableResult({
+        key,
+        type: "계열",
+        title: m.name,
+        subtitle: m.relatedDepts && m.relatedDepts.length
+          ? `관련 학과: ${m.relatedDepts.slice(0, 6).join(", ")}${m.relatedDepts.length > 6 ? " 외" : ""}`
+          : m.category,
+        onclick: `selectPublicMajor('${String(m.id).replace(/'/g, "\\'")}')`
+      });
+    }).join("");
+  }
+
+  if (limitedUniv.length > 0) {
+    html += `<div style="font-size:11px;font-weight:700;color:#8E99AE;padding:12px 4px 2px;letter-spacing:.05em;">대학별 모집단위 검색 결과</div>`;
+    html += limitedUniv.map(d => {
+      const key = `univ__${d.id}`;
+      const safeKey = key.replace(/'/g, "\\'");
+      return renderPublicSelectableResult({
+        key,
+        type: "대학",
+        title: `${d.univ} · ${d.dept}`,
+        subtitle: `${d.college || "단과대학 미제시"}${d.계열 ? " · " + d.계열 : ""}`,
+        onclick: `selectPublicUnivDept('${safeKey}')`
+      });
+    }).join("");
+  }
+
+  const total = localHits.length + univHits.length;
+  const shown = limitedLocal.length + limitedUniv.length;
+  if (total > shown) {
+    html += `<div class="search-empty" style="padding:12px;">검색 결과가 많아 상위 ${shown}개만 표시했습니다. 검색어를 더 구체적으로 입력해 주세요.</div>`;
+  }
+
+  resultEl.innerHTML = html;
+}
+
+function resetPublicSelectedSubtitle() {
+  const nameEl = document.getElementById("publicSelectedMajorName");
+  if (!nameEl) return;
+  const prevSub = nameEl.nextElementSibling;
+  if (prevSub && prevSub.tagName === "DIV") prevSub.remove();
+}
+
+function selectPublicUnivDept(key) {
+  const deptId = String(key).replace(/^univ__/, "");
+  const found = getUnivDeptList().find(d => d.id === deptId);
+  if (!found) return;
+
+  const recDisplay = [];
+  found.cols.forEach((col, i) => {
+    const v = [found.c1, found.c2, found.c3][i];
+    if (!v || v === "미제시") return;
+    recDisplay.push(`[${col}] ${v}`);
+  });
+
+  publicMajorState.selectedMajor = {
+    _type: "univ",
+    _searchKey: `univ__${found.id}`,
+    name: found.dept,
+    category: `${found.univ} · ${found.college}`,
+    recDisplay,
+    counselingNote: `${found.univ} 2028학년도 대입 기준 권장 이수과목입니다. 실제 반영 여부는 모집요강을 확인하세요.`,
+  };
+
+  document.getElementById("publicMajorSearch").value = `${found.dept} (${found.univ})`;
+  document.getElementById("publicMajorSearchResults").classList.add("hidden");
+
+  resetPublicSelectedSubtitle();
+  document.getElementById("publicSelectedMajorName").textContent = found.dept;
+  document.getElementById("publicSelectedMajorName").insertAdjacentHTML("afterend",
+    `<div style="font-size:12px;color:var(--c-text-mute);margin-top:2px;">${escapeHtml(found.univ)} · ${escapeHtml(found.college)}</div>`
+  );
+  document.getElementById("publicMajorRecommendedCourses").innerHTML =
+    recDisplay.map(c => `<span class="course-tag">📌 ${escapeHtml(c)}</span>`).join("") || `<span class="course-tag">권장 이수과목 미제시</span>`;
+  document.getElementById("publicMajorCounselingNote").textContent = publicMajorState.selectedMajor.counselingNote;
+  document.getElementById("publicSelectedMajorInfo").classList.remove("hidden");
+}
+
+function selectPublicMajor(id) {
+  const major = majorRecommendations.find(m => m.id === id);
+  if (!major) return;
+
+  publicMajorState.selectedMajor = { ...major, _type: "field", _searchKey: `field__${major.id}` };
+  document.getElementById("publicMajorSearch").value = major.name;
+  document.getElementById("publicMajorSearchResults").classList.add("hidden");
+
+  resetPublicSelectedSubtitle();
+  document.getElementById("publicSelectedMajorName").textContent = major.name;
+  const related = (major.relatedDepts || []).slice(0, 8).join(" · ");
+  if (related) {
+    document.getElementById("publicSelectedMajorName").insertAdjacentHTML("afterend",
+      `<div style="font-size:12px;color:var(--c-text-mute);margin-top:2px;">관련 학과: ${escapeHtml(related)}</div>`
+    );
+  }
+  document.getElementById("publicMajorRecommendedCourses").innerHTML =
+    major.recommended.map(c => `<span class="course-tag">📌 ${escapeHtml(c)}</span>`).join("");
+  document.getElementById("publicMajorCounselingNote").textContent = major.counselingNote;
+  document.getElementById("publicSelectedMajorInfo").classList.remove("hidden");
+}
+
+function clearPublicMajor() {
+  publicMajorState.selectedMajor = null;
+  document.getElementById("publicMajorSearch").value = "";
+  document.getElementById("publicMajorSearchResults").innerHTML = "";
+  document.getElementById("publicMajorSearchResults").classList.add("hidden");
+  document.getElementById("publicSelectedMajorInfo").classList.add("hidden");
+  resetPublicSelectedSubtitle();
+  setTimeout(() => document.getElementById("publicMajorSearch")?.focus(), 30);
 }
 
 /* ────────────────────────────────────────────
